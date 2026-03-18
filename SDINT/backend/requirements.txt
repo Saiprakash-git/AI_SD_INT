@@ -1,0 +1,13 @@
+Flask==3.0.0
+flask-cors
+praw
+pymongo
+python-dotenv
+nltk
+spacy
+gensim
+scikit-learn
+transformers
+torch
+networkx
+vaderSentiment
