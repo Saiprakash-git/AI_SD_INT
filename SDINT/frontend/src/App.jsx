@@ -1,34 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Activity, MessageSquare, AlertTriangle, TrendingUp, BarChart3, Clock, ThumbsUp, ArrowLeft } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts';
+import { Activity, MessageSquare, AlertTriangle, TrendingUp, BarChart3, Clock, ThumbsUp, ArrowLeft, LayoutDashboard, HeartPulse, Search, Bell } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+
+import NarrativeArcChart from './components/NarrativeArcChart';
+import OpinionDivergencePanel from './components/OpinionDivergencePanel';
+import EchoChamberDashboard from './components/EchoChamberDashboard';
 
 const API_BASE = 'http://localhost:5000/api';
 
 function App() {
   const [activeTopic, setActiveTopic] = useState(null);
   const [trending, setTrending] = useState([]);
+  const [trendAnalytics, setTrendAnalytics] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [postDetails, setPostDetails] = useState(null);
   const [postComments, setPostComments] = useState([]);
   const [toxicComments, setToxicComments] = useState([]);
-  const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard', 'postDetails'
+  const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard', 'postDetails', 'health'
+  const [rssStatus, setRssStatus] = useState(null);
 
   useEffect(() => {
     fetchTrending();
     fetchToxicComments();
+    fetchRssStatus();
+    const interval = setInterval(fetchRssStatus, 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchRssStatus = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/status`);
+      if (res.data && res.data.length > 0) {
+        // Find most recently updated
+        const sorted = res.data.sort((a,b) => new Date(b.last_poll_time) - new Date(a.last_poll_time));
+        setRssStatus(sorted[0]);
+      }
+    } catch(e) {}
+  };
 
   useEffect(() => {
     fetchPosts(activeTopic);
+    if (activeTopic !== null) {
+      fetchTrendAnalytics(activeTopic);
+    } else {
+      setTrendAnalytics(null);
+    }
   }, [activeTopic]);
 
   const fetchTrending = async () => {
     try {
       const res = await axios.get(`${API_BASE}/topics/trending`);
       setTrending(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchTrendAnalytics = async (topicId) => {
+    try {
+      const res = await axios.get(`${API_BASE}/trends/${topicId}/analytics`);
+      setTrendAnalytics(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -140,6 +174,31 @@ function App() {
           </div>
         </div>
 
+        {trendAnalytics && (
+          <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+            <h2 className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
+              <TrendingUp size={18} color="var(--accent-secondary)" />
+              Trend Analytics
+            </h2>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              <strong>Origin Post:</strong> {trendAnalytics.origin?.title} <br/>
+              <strong>Started:</strong> {trendAnalytics.origin?.date}
+            </div>
+            {trendAnalytics.timeline && trendAnalytics.timeline.length > 0 && (
+              <ResponsiveContainer width="100%" height={150}>
+                <LineChart data={trendAnalytics.timeline}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={10} tickFormatter={(t) => String(t).split(' ')[0]} />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'rgba(25, 28, 41, 0.9)', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }} 
+                  />
+                  <Line type="monotone" dataKey="mentions" stroke="var(--accent-primary)" strokeWidth={3} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        )}
+
         <div className="glass-panel">
           <h2 className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <AlertTriangle size={20} color="var(--toxic)" />
@@ -227,6 +286,9 @@ function App() {
               </>
             )}
 
+            <NarrativeArcChart postId={selectedPost.post_id} />
+            <OpinionDivergencePanel postId={selectedPost.post_id} />
+
             <h3 style={{ marginTop: '2rem', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
               Comment Thread Analysis
             </h3>
@@ -264,16 +326,65 @@ function App() {
     </div>
   );
 
+  const getStatusColor = () => {
+    if (!rssStatus) return 'red';
+    const minDiff = (new Date() - new Date(rssStatus.last_poll_time)) / 60000;
+    if (minDiff < 5) return '#10b981';
+    if (minDiff < 15) return '#eab308';
+    return '#ef4444';
+  };
+
   return (
-    <div className="app-container">
-      <header className="header">
-        <div className="header-title-box">
+    <div className="platform-layout">
+      <aside className="side-nav">
+        <div className="brand">
           <h1 className="gradient-text">SocialPulse AI</h1>
-          <p>Real-time discussion analytics, sentiment and toxicity tracking across communities.</p>
+          <p>Intelligence Platform</p>
         </div>
-      </header>
-      
-      {viewMode === 'dashboard' ? renderDashboard() : renderPostDetails()}
+        
+        <div className="nav-menu">
+          <div 
+            className={`nav-item ${viewMode === 'dashboard' ? 'active' : ''}`} 
+            onClick={() => { setViewMode('dashboard'); setActiveTopic(null); }}
+          >
+            <LayoutDashboard size={20} />
+            Overview Dashboard
+          </div>
+          <div 
+            className={`nav-item ${viewMode === 'health' ? 'active' : ''}`} 
+            onClick={() => setViewMode('health')}
+          >
+            <HeartPulse size={20} />
+            Community Health
+          </div>
+        </div>
+      </aside>
+
+      <main className="main-area">
+        <div className="top-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.03)', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--panel-border)', width: '300px' }}>
+             <Search size={18} color="var(--text-muted)" />
+             <input type="text" placeholder="Search discussions..." style={{ background: 'transparent', border: 'none', color: '#fff', outline: 'none', width: '100%', fontSize: '0.9rem' }} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+             <div style={{ position: 'relative' }}>
+                <Bell size={20} color="var(--text-muted)" />
+                <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, background: 'var(--accent-secondary)', borderRadius: '50%' }} />
+             </div>
+             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: getStatusColor(), boxShadow: `0 0 8px ${getStatusColor()}` }} />
+               <span>Live &bull; {rssStatus ? `Sync'd ${Math.floor((new Date() - new Date(rssStatus.last_poll_time))/60000)}m ago` : 'Syncing...'}</span>
+             </div>
+          </div>
+        </div>
+        
+        <div className="content">
+          {viewMode === 'dashboard' && renderDashboard()}
+          {viewMode === 'postDetails' && renderPostDetails()}
+          {viewMode === 'health' && <EchoChamberDashboard />}
+        </div>
+      </main>
     </div>
   );
 }

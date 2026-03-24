@@ -1,0 +1,54 @@
+{
+  "posts_cols": [
+    "type",
+    "id",
+    "subreddit.id",
+    "subreddit.name",
+    "subreddit.nsfw",
+    "created_utc",
+    "permalink",
+    "domain",
+    "url",
+    "selftext",
+    "title",
+    "score"
+  ],
+  "comments_cols": [
+    "type",
+    "id",
+    "subreddit.id",
+    "subreddit.name",
+    "subreddit.nsfw",
+    "created_utc",
+    "permalink",
+    "body",
+    "sentiment",
+    "score"
+  ],
+  "post_row": {
+    "type": "post",
+    "id": "t4f9bf",
+    "subreddit.id": "2r97t",
+    "subreddit.name": "datasets",
+    "subreddit.nsfw": false,
+    "created_utc": 1646160815,
+    "permalink": "https://old.reddit.com/r/datasets/comments/t4f9bf/removed_by_reddit/",
+    "domain": "pravda.com.ua",
+    "url": NaN,
+    "selftext": "[removed]",
+    "title": "[ Removed by Reddit ]",
+    "score": 7
+  },
+  "comment_row": {
+    "type": "comment",
+    "id": "hyyz6g8",
+    "subreddit.id": "2r97t",
+    "subreddit.name": "datasets",
+    "subreddit.nsfw": false,
+    "created_utc": 1646173750,
+    "permalink": "https://old.reddit.com/r/datasets/comments/t45uk7/request_looking_for_a_dataset_that_i_can_use_to/hyyz6g8/",
+    "body": "Spatial problem: Suitability of new locations for your favorite chain store. Use OpenStreetMap for the data.",
+    "sentiment": 0.0772,
+    "score": 1
+  }
+}
