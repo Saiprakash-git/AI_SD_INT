@@ -14,7 +14,8 @@ const EchoChamberDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/subreddits/echo-chamber');
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://sd-int.onrender.com/api';
+      const res = await axios.get(`${API_BASE}/subreddits/echo-chamber`);
       setData(res.data);
       setLoading(false);
     } catch (err) {

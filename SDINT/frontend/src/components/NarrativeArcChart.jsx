@@ -8,7 +8,8 @@ const NarrativeArcChart = ({ postId }) => {
 
   useEffect(() => {
     if (postId) {
-      axios.get(`http://localhost:5000/api/posts/${postId}/narrative-arc`)
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://sd-int.onrender.com/api';
+      axios.get(`${API_BASE}/posts/${postId}/narrative-arc`)
         .then(res => {
           setData(res.data);
           setLoading(false);

@@ -7,7 +7,7 @@ import NarrativeArcChart from './components/NarrativeArcChart';
 import OpinionDivergencePanel from './components/OpinionDivergencePanel';
 import EchoChamberDashboard from './components/EchoChamberDashboard';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://sd-int.onrender.com/api';
 
 function App() {
   const [activeTopic, setActiveTopic] = useState(null);
