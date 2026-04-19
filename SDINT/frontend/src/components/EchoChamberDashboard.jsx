@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
+import { useDataCache } from '../DataCacheContext';
 
 const EchoChamberDashboard = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { fetchWithCache, getCached, API_BASE } = useDataCache();
+  const [data, setData] = useState(() => getCached('echoChamber') || []);
+  const [loading, setLoading] = useState(() => !getCached('echoChamber'));
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5 * 60 * 1000); // Every 5 minutes
+    const interval = setInterval(fetchData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
-      const res = await axios.get(`${API_BASE}/subreddits/echo-chamber`);
-      setData(res.data);
+      const result = await fetchWithCache('echoChamber', `${API_BASE}/subreddits/echo-chamber`);
+      setData(result);
       setLoading(false);
     } catch (err) {
       console.error(err);

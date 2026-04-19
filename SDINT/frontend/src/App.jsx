@@ -8,6 +8,7 @@ import Incidents from './pages/Incidents';
 import NarrativeSearch from './pages/NarrativeSearch';
 import LinkAnalyzer from './pages/LinkAnalyzer';
 import Trends from './pages/Trends';
+import { DataCacheProvider } from './DataCacheContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
 
@@ -39,6 +40,7 @@ function App() {
   };
 
   return (
+    <DataCacheProvider>
     <Router>
       <div className="app-shell">
         
@@ -91,6 +93,7 @@ function App() {
         </main>
       </div>
     </Router>
+    </DataCacheProvider>
   );
 }
 

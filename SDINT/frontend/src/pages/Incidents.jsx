@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { AlertOctagon, TrendingUp, Clock, FileText } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
+import { useDataCache } from '../DataCacheContext';
 
 export default function Incidents() {
-  const [incidents, setIncidents] = useState([]);
+  const { fetchWithCache, getCached, API_BASE } = useDataCache();
+  const [incidents, setIncidents] = useState(() => getCached('incidents') || []);
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
@@ -14,8 +13,8 @@ export default function Incidents() {
 
   const fetchIncidents = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/incidents`);
-      setIncidents(res.data);
+      const data = await fetchWithCache('incidents', `${API_BASE}/incidents`);
+      setIncidents(data);
     } catch(e) {}
   };
 
@@ -50,7 +49,7 @@ export default function Incidents() {
             </div>
 
             {/* Horizontal Timeline Overview */}
-            {!expanded && (
+            {expanded !== i && (
                <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                  {inc.timeline.map((node, i) => (
                     <div key={i} style={{ minWidth: '200px', background: 'var(--bg-color)', padding: '1rem', borderRadius: '4px', border: '1px solid var(--panel-border)' }}>
@@ -112,7 +111,10 @@ export default function Incidents() {
         ))}
 
         {incidents.length === 0 && (
-           <div className="skeleton" style={{ height: '300px' }} />
+           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+             <AlertOctagon size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
+             <p className="mono" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No incidents detected yet. Incidents are auto-generated from topic clusters with 3+ posts.</p>
+           </div>
         )}
       </div>
 

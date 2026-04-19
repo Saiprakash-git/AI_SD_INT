@@ -3,13 +3,13 @@ import axios from 'axios';
 import { MessageSquare, AlertTriangle, ThumbsUp, Camera, User } from 'lucide-react';
 import NarrativeArcChart from '../components/NarrativeArcChart';
 import OpinionDivergencePanel from '../components/OpinionDivergencePanel';
-
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
+import { useDataCache } from '../DataCacheContext';
 
 export default function Feed() {
-  const [posts, setPosts] = useState([]);
+  const { fetchWithCache, getCached, API_BASE } = useDataCache();
+  const [posts, setPosts] = useState(() => getCached('posts') || []);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !getCached('posts'));
   const [echoStatus, setEchoStatus] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -39,8 +39,8 @@ export default function Feed() {
 
   const fetchPosts = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/posts`);
-      setPosts(res.data);
+      const data = await fetchWithCache('posts', `${API_BASE}/posts`);
+      setPosts(data);
       setLoading(false);
     } catch(e) { setLoading(false); }
   };

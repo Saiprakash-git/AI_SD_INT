@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Activity, TrendingUp } from 'lucide-react';
 import EchoChamberDashboard from '../components/EchoChamberDashboard';
-
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
+import { useDataCache } from '../DataCacheContext';
 
 export default function Trends() {
-  const [trending, setTrending] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { fetchWithCache, getCached, API_BASE } = useDataCache();
+  const [trending, setTrending] = useState(() => getCached('trending') || []);
+  const [loading, setLoading] = useState(() => !getCached('trending'));
 
   useEffect(() => {
     fetchTrending();
@@ -15,8 +14,8 @@ export default function Trends() {
 
   const fetchTrending = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/topics/trending`);
-      setTrending(res.data);
+      const data = await fetchWithCache('trending', `${API_BASE}/topics/trending`);
+      setTrending(data);
       setLoading(false);
     } catch(e) { setLoading(false); }
   };
@@ -47,9 +46,9 @@ export default function Trends() {
             return (
               <div key={topic.topic_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-color)', padding: '0.5rem 1rem', borderRadius: '50px', border: '1px solid var(--panel-border)', cursor: 'pointer', whiteSpace: 'nowrap' }} className="nav-item">
                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: sColor }} />
-                 <span style={{ fontSize: '0.9rem', color: 'var(--text-bright)' }}>{topic.top_words?.slice(0, 2).join(' / ')}</span>
+                 <span style={{ fontSize: '0.9rem', color: 'var(--text-bright)' }}>{topic.label || (topic.top_words ? topic.top_words.slice(0, 2).join(' / ') : `Topic ${topic.topic_id}`)}</span>
                  <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--accent-secondary)' }}>
-                    ↑ {(topic.post_count || 0)} posts
+                    ↑ {(topic.frequency || topic.post_count || 0)} posts
                  </span>
               </div>
             );

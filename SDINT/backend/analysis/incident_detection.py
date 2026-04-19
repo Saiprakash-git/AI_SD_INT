@@ -12,8 +12,21 @@ def detect_incidents():
     incidents = []
     
     for t in topics:
-        topic_id = t['topic_id']
-        words = t['top_words']
+        topic_id = t.get('topic_id')
+        if topic_id is None:
+            continue
+            
+        # Handle both field names: 'top_words' (list) or 'label' (space-separated string)
+        if 'top_words' in t and isinstance(t['top_words'], list):
+            words = t['top_words']
+        elif 'label' in t and isinstance(t['label'], str):
+            words = t['label'].split()
+        else:
+            continue
+            
+        if not words:
+            continue
+        
         # Find posts related to this topic
         assigned_posts = list(posts_collection.find({"topic_id": topic_id}).sort("timestamp", 1))
         
@@ -21,7 +34,7 @@ def detect_incidents():
             continue
             
         # Incident Title Auto-Generation
-        title = " / ".join(words[:3]).title() + " Controversy"
+        title = " / ".join(words[:3]).title() + " Discussion"
         
         # Severity based on total score / comments
         activity = sum([p.get('score', 0) + p.get('number_of_comments', 0) for p in assigned_posts])
@@ -31,10 +44,23 @@ def detect_incidents():
         timeline = []
         for i, p in enumerate(assigned_posts[:5]):
             phase = "Trigger" if i == 0 else "Reactions" if i == 1 else "Evolution" if i == 2 else "Current State"
+            
+            # Handle different timestamp formats
+            ts = p.get('timestamp')
+            if isinstance(ts, datetime):
+                date_str = ts.strftime('%b %d, %H:%M')
+            elif isinstance(ts, (int, float)):
+                date_str = datetime.fromtimestamp(ts).strftime('%b %d, %H:%M')
+            else:
+                date_str = "Unknown"
+                
+            post_title = p.get('title', 'Untitled')
+            summary = (post_title[:80] + "...") if len(post_title) > 80 else post_title
+            
             timeline.append({
                 "phase": phase,
-                "date": p['timestamp'].strftime('%b %d, %H:%M') if isinstance(p.get('timestamp'), datetime) else "Unknown",
-                "summary": p.get('title')[:80] + "..."
+                "date": date_str,
+                "summary": summary
             })
             
         # External News Articles for context
@@ -62,6 +88,6 @@ def detect_incidents():
             "news": news
         })
         
-    # Sort by severiy descending
+    # Sort by severity descending
     incidents.sort(key=lambda x: x['severity'], reverse=True)
     return incidents
