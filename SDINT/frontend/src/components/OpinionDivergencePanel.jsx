@@ -8,7 +8,7 @@ const OpinionDivergencePanel = ({ postId }) => {
 
   useEffect(() => {
     if (postId) {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://sd-int.onrender.com/api';
+      const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
       axios.get(`${API_BASE}/posts/${postId}/opinion-divergence`)
         .then(res => {
           setData(res.data);

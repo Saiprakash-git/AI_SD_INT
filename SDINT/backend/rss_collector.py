@@ -7,6 +7,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from db.mongo_client import posts_collection, comments_collection, db
 from analysis.echo_chamber import compute_echo_chamber_score
+from nlp.multimodal import extract_image_context
 
 def fetch_rss_live_data():
     subreddits = ['technology', 'worldnews', 'programming', 'MachineLearning', 'science', 'AskReddit']
@@ -25,17 +26,30 @@ def fetch_rss_live_data():
                     pid = str(post['id'])
                     
                     if not posts_collection.find_one({"post_id": pid}):
+                        content = post.get('selftext', '')
+                        img_metadata = None
+                        
+                        url = post.get('url', '')
+                        if url.endswith(('.jpg', '.png', '.jpeg', '.webp')) or post.get('post_hint') == 'image':
+                            img_ctx = extract_image_context(url)
+                            if img_ctx:
+                                img_metadata = img_ctx
+                                content += f"\n\n[Visual Content Scene: {img_ctx.get('caption', '')}]"
+                                if img_ctx.get('ocr_text'):
+                                    content += f"\n[Embedded Text/OCR: {img_ctx['ocr_text']}]"
+                                    
                         doc = {
                             "post_id": pid,
                             "title": post.get('title', ''),
-                            "content": post.get('selftext', ''),
+                            "content": content,
                             "subreddit": sub,
                             "score": post.get('score', 0),
                             "number_of_comments": post.get('num_comments', 0),
                             "timestamp": datetime.fromtimestamp(post.get('created_utc', time.time())),
                             "created_utc": post.get('created_utc', time.time()),
-                            "url": post.get('url', ''),
-                            "fetched_at": datetime.utcnow()
+                            "url": url,
+                            "fetched_at": datetime.utcnow(),
+                            "image_metadata": img_metadata
                         }
                         posts_collection.insert_one(doc)
                         posts_added += 1

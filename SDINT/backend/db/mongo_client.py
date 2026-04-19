@@ -14,6 +14,7 @@ try:
 
     posts_collection = db["posts"]
     comments_collection = db["comments"]
+    topics_collection = db["trends"]
     
     print("Successfully connected to MongoDB.")
 except Exception as e:

@@ -8,6 +8,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from db.mongo_client import posts_collection, comments_collection
+from nlp.multimodal import extract_image_context
 
 def fetch_json_data():
     subreddits = ['technology', 'ArtificialIntelligence', 'dataisbeautiful', 'movies']
@@ -35,18 +36,32 @@ def fetch_json_data():
                 if not post_id or post.get('stickied', False): 
                     continue
                 
+                url = post.get('url', '')
+                content = post.get('selftext', '')
+                img_metadata = None
+                
+                if url.endswith(('.jpg', '.png', '.jpeg', '.webp')) or post.get('post_hint') == 'image':
+                    img_ctx = extract_image_context(url)
+                    if img_ctx:
+                        img_metadata = img_ctx
+                        content += f"\n\n[Visual Content Scene: {img_ctx.get('caption', '')}]"
+                        if img_ctx.get('ocr_text'):
+                            content += f"\n[Embedded Text/OCR: {img_ctx['ocr_text']}]"
+                
                 # Insert post
                 posts_collection.update_one(
                     {"post_id": post_id},
                     {"$set": {
                         "post_id": post_id,
                         "title": post.get('title', ''),
-                        "content": post.get('selftext', ''),
+                        "content": content,
                         "subreddit": sub,
                         "score": post.get('score', 0),
                         "number_of_comments": post.get('num_comments', 0),
                         "timestamp": datetime.fromtimestamp(post.get('created_utc', time.time())),
-                        "created_utc": post.get('created_utc', time.time())
+                        "created_utc": post.get('created_utc', time.time()),
+                        "url": url,
+                        "image_metadata": img_metadata
                     }},
                     upsert=True
                 )

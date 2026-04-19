@@ -11,6 +11,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from db.mongo_client import db
 from analysis.narrative_arc import compute_narrative_arc
 from analysis.opinion_divergence import compute_opinion_divergence
+from analysis.incident_detection import detect_incidents
+from analysis.narrative_search import construct_narrative
+from analysis.link_analyzer import run_link_analysis
 import rss_collector
 
 app = Flask(__name__)
@@ -130,6 +133,23 @@ def get_all_echo_chambers():
 def get_echo_chamber(subreddit):
     doc = db["subreddit_metrics"].find_one({"subreddit": subreddit})
     return jsonify(parse_json(doc))
+
+@app.route('/api/incidents', methods=['GET'])
+def get_incidents_api():
+    return jsonify(parse_json(detect_incidents()))
+
+@app.route('/api/search/narrative', methods=['GET'])
+def search_narrative_api():
+    q = request.args.get('q', '')
+    if not q: return jsonify({"error": "No query"})
+    return jsonify(parse_json(construct_narrative(q)))
+
+@app.route('/api/analyze-link', methods=['POST'])
+def analyze_link_api():
+    data = request.json or {}
+    url = data.get('url', '')
+    if not url: return jsonify({"error": "No url"})
+    return jsonify(parse_json(run_link_analysis(url)))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
