@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { Activity, MessageSquare, AlertTriangle, TrendingUp, BarChart3, Clock, ThumbsUp, ArrowLeft, LayoutDashboard, HeartPulse, Search, Bell, Camera, Link as LinkIcon, AlertOctagon } from 'lucide-react';
+import { Activity, MessageSquare, AlertTriangle, TrendingUp, BarChart3, Clock, ThumbsUp, ArrowLeft, LayoutDashboard, HeartPulse, Search, Bell, Camera, Link as LinkIcon, AlertOctagon, Zap } from 'lucide-react';
 
 import Feed from './pages/Feed';
 import Incidents from './pages/Incidents';
 import NarrativeSearch from './pages/NarrativeSearch';
 import LinkAnalyzer from './pages/LinkAnalyzer';
 import Trends from './pages/Trends';
+import CrawlMode from './pages/CrawlMode';
 import { DataCacheProvider } from './DataCacheContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
@@ -52,6 +53,7 @@ function App() {
           </div>
           
           <div className="nav-links">
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '12px 0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>📊 Social Analysis</div>
             <NavLink to="/" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
               <LayoutDashboard size={18} /> Live Feed
             </NavLink>
@@ -66,6 +68,13 @@ function App() {
             </NavLink>
             <NavLink to="/trends" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
               <TrendingUp size={18} /> Trends & Health
+            </NavLink>
+
+            <div style={{ height: '1px', background: 'var(--border-color)', margin: '15px 0' }} />
+
+            <div style={{ fontSize: '11px', color: 'var(--accent-primary)', padding: '12px 0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>🕵️ OSINT Crawl</div>
+            <NavLink to="/crawl" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+              <Zap size={18} /> Crawl Mode
             </NavLink>
           </div>
         </aside>
@@ -87,6 +96,7 @@ function App() {
                 <Route path="/search" element={<NarrativeSearch />} />
                 <Route path="/analyzer" element={<LinkAnalyzer />} />
                 <Route path="/trends" element={<Trends />} />
+                <Route path="/crawl" element={<CrawlMode />} />
              </Routes>
           </div>
           
