@@ -16,21 +16,23 @@ const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://
 function App() {
   const [rssStatus, setRssStatus] = useState(null);
 
-  useEffect(() => {
-    fetchRssStatus();
-    const interval = setInterval(fetchRssStatus, 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchRssStatus = async () => {
+  async function fetchRssStatus() {
     try {
       const res = await axios.get(`${API_BASE}/status`);
       if (res.data && res.data.length > 0) {
         const sorted = res.data.sort((a,b) => new Date(b.last_poll_time) - new Date(a.last_poll_time));
         setRssStatus(sorted[0]);
       }
-    } catch(e) {}
-  };
+    } catch {
+      setRssStatus(null);
+    }
+  }
+
+  useEffect(() => {
+    fetchRssStatus();
+    const interval = setInterval(fetchRssStatus, 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getStatusColor = () => {
     if (!rssStatus) return 'var(--negative)';

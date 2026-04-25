@@ -1,0 +1,558 @@
+{
+  "query": "Elon Musk Tesla cybersecurity incident 2024",
+  "results": [
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "September 17, 2024 - Cybersecurity Insiders has learned that the document from which the revelation was made was submitted to an ongoing court hearing where Musk was sued by a diver named Vernon Unsworth for calling him a \u2018Pedo Guy\u2019 on Twitter last year. With regards to a case and an incident, the court learned that Musk changes his Cell Phone on an occasional note due to reasons that have to do with data security and leak of sensitive information.",
+        "title": "Elon Musk destroys his phone regularly due to Data Security Fears - Cybersecurity Insiders",
+        "url": "https://www.cybersecurity-insiders.com/elon-musk-destroys-his-phone-regularly-due-to-data-security-fears/"
+      },
+      "entities": [
+        {
+          "confidence": 0.85,
+          "context": "Elon Musk destroys his phone regularly due to Data Security",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        },
+        {
+          "confidence": 0.8,
+          "context": "Elon Musk destroys his phone regularly due to Data Security Fears - Cybersecurity Insiders September 17, 2024 - Cybersecurity Insiders has l",
+          "source": "ner",
+          "type": "organization",
+          "value": "Data Security Fears - Cybersecurity Insiders"
+        },
+        {
+          "confidence": 0.75,
+          "context": "e to Data Security Fears - Cybersecurity Insiders September 17, 2024 - Cybersecurity Insiders has learned that the document from which the reve",
+          "source": "ner",
+          "type": "date",
+          "value": "September 17, 2024 - Cybersecurity Insiders"
+        },
+        {
+          "confidence": 0.85,
+          "context": "ourt hearing where Musk was sued by a diver named Vernon Unsworth for calling him a \u2018Pedo Guy\u2019 on Twitter last year",
+          "source": "ner",
+          "type": "person",
+          "value": "Vernon Unsworth"
+        },
+        {
+          "confidence": 0.75,
+          "context": "d Vernon Unsworth for calling him a \u2018Pedo Guy\u2019 on Twitter last year. With regards to a case and an incident, the cour",
+          "source": "ner",
+          "type": "date",
+          "value": "Twitter last year"
+        },
+        {
+          "confidence": 0.8,
+          "context": "incident, the court learned that Musk changes his Cell Phone on an occasional note due to reasons that have to",
+          "source": "ner",
+          "type": "organization",
+          "value": "Cell Phone"
+        }
+      ],
+      "evidence_id": "evi_9a192fb6366e4e00",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 1,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_3616881",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.141174+00:00",
+        "processed_at": "2026-04-23T18:03:23.141174+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "Well, the incident between Elon Musk and CrowdStrike shows us just how important cybersecurity is in today's world. When systems fail, the impact is huge\u2014affecting everything from businesses to individuals.",
+        "title": "Elon Musk and CrowdStrike: The Intersection of Cybersecurity and ...",
+        "url": "https://nextmagazine.co.uk/elon-musk-and-crowdstrike/"
+      },
+      "entities": [
+        {
+          "confidence": 0.85,
+          "context": "Elon Musk and CrowdStrike: The Intersection of Cybersecurit",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        },
+        {
+          "confidence": 0.8,
+          "context": "Elon Musk and CrowdStrike: The Intersection of Cybersecurity and ... Well,",
+          "source": "ner",
+          "type": "organization",
+          "value": "CrowdStrike"
+        },
+        {
+          "confidence": 0.8,
+          "context": "Elon Musk and CrowdStrike: The Intersection of Cybersecurity and ... Well, the incident between Elon Musk and",
+          "source": "ner",
+          "type": "organization",
+          "value": "The Intersection of Cybersecurity"
+        },
+        {
+          "confidence": 0.75,
+          "context": "e shows us just how important cybersecurity is in today's world. When systems fail, the impact is huge\u2014af",
+          "source": "ner",
+          "type": "date",
+          "value": "today"
+        }
+      ],
+      "evidence_id": "evi_79ee73b4daae4ab5",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 2,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_5363151",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.157565+00:00",
+        "processed_at": "2026-04-23T18:03:23.157565+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "September 5, 2025 - Musk faces backlash after hackers target Tesla customers, sparking concerns over data security and protection in connected automotive systems.",
+        "title": "Elon Musk Faces Backlash After Hackers Target Tesla Customers raising data security concerns - Cybersecurity Insiders",
+        "url": "https://www.cybersecurity-insiders.com/elon-musk-faces-backlash-after-hackers-target-tesla-customers-raising-data-security-concerns/"
+      },
+      "entities": [
+        {
+          "confidence": 0.8,
+          "context": "Elon Musk Faces Backlash After Hackers Target Tesla Customers raising data security concerns - Cybersecurity In",
+          "source": "ner",
+          "type": "organization",
+          "value": "Elon Musk Faces Backlash After Hackers Target Tesla Customers"
+        },
+        {
+          "confidence": 0.75,
+          "context": "g data security concerns - Cybersecurity Insiders September 5, 2025 - Musk faces backlash after hackers target",
+          "source": "ner",
+          "type": "date",
+          "value": "September 5"
+        }
+      ],
+      "evidence_id": "evi_c1adf95e71634d28",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 3,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_8884863",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.171964+00:00",
+        "processed_at": "2026-04-23T18:03:23.171964+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "... of US government digital assets by Elon Musk and his band of very young men continues, one thing is clear: Elon Musk knows jack about cybersecurity ...",
+        "title": "Elon Musk knows jack about cybersecurity",
+        "url": "https://www.metacurity.com/elon-musk-knows-jack-about-cybersecurity/"
+      },
+      "entities": [
+        {
+          "confidence": 0.75,
+          "context": "Elon Musk knows jack about cybersecurity ... of US government digital assets by Elon Musk and his ba",
+          "source": "ner",
+          "type": "location",
+          "value": "US"
+        },
+        {
+          "confidence": 0.85,
+          "context": "ersecurity ... of US government digital assets by Elon Musk and his band of very young men continues, one thi",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        }
+      ],
+      "evidence_id": "evi_bb76332e610241d3",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 4,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_6934015",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.183739+00:00",
+        "processed_at": "2026-04-23T18:03:23.183739+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "Tagged: cybersecurity , Elon Musk , Hacking , incidents , India , Information Security , Internet , SpaceX , Starlink , technology ...",
+        "title": "Elon Musk Archives - Cyber Security News | Exploit One |",
+        "url": "https://www.exploitone.com/tag/elon-musk/"
+      },
+      "entities": [
+        {
+          "confidence": 0.85,
+          "context": "Elon Musk Archives - Cyber Security News | Exploit One | Tagged: cybersecurity , Elon Musk",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk Archives - Cyber Security News"
+        },
+        {
+          "confidence": 0.75,
+          "context": "Elon Musk Archives - Cyber Security News | Exploit One | Tagged: cybersecurity , Elon Musk , Hacking",
+          "source": "ner",
+          "type": "location",
+          "value": "Exploit"
+        },
+        {
+          "confidence": 0.85,
+          "context": "rity News | Exploit One | Tagged: cybersecurity , Elon Musk , Hacking , incidents , India , Information Secur",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        },
+        {
+          "confidence": 0.75,
+          "context": "Exploit One | Tagged: cybersecurity , Elon Musk , Hacking , incidents , India , Information Security , Inte",
+          "source": "ner",
+          "type": "location",
+          "value": "Hacking"
+        },
+        {
+          "confidence": 0.75,
+          "context": "cybersecurity , Elon Musk , Hacking , incidents , India , Information Security , Internet , SpaceX , Star",
+          "source": "ner",
+          "type": "location",
+          "value": "India"
+        },
+        {
+          "confidence": 0.8,
+          "context": "ndia , Information Security , Internet , SpaceX , Starlink , technology ...",
+          "source": "ner",
+          "type": "organization",
+          "value": "Starlink"
+        }
+      ],
+      "evidence_id": "evi_ac9fa82618854388",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 5,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_4203253",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.195427+00:00",
+        "processed_at": "2026-04-23T18:03:23.195427+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "Tesla CEO Elon Musk said his company\u2019s Nevada factory was the target of a foiled cyberattack allegedly plotted by a Russian national.",
+        "title": "Cybersecurity",
+        "url": "https://usagag.com/tag/cybersecurity/"
+      },
+      "entities": [
+        {
+          "confidence": 0.8,
+          "context": "Cybersecurity Tesla CEO Elon Musk said his company\u2019s Nevada factory w",
+          "source": "ner",
+          "type": "organization",
+          "value": "Cybersecurity Tesla"
+        },
+        {
+          "confidence": 0.85,
+          "context": "Cybersecurity Tesla CEO Elon Musk said his company\u2019s Nevada factory was the target",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        },
+        {
+          "confidence": 0.75,
+          "context": "ersecurity Tesla CEO Elon Musk said his company\u2019s Nevada factory was the target of a foiled cyberattack al",
+          "source": "ner",
+          "type": "location",
+          "value": "Nevada"
+        }
+      ],
+      "evidence_id": "evi_7ecaab26b16649e4",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 6,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_852111",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.205603+00:00",
+        "processed_at": "2026-04-23T18:03:23.205603+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "Tesla and SpaceX Chief Executive Officer Elon Musk speaks at the SATELLITE Conference and Exhibition in Washington, Monday, March 9, 2020.",
+        "title": "US securities agency denies claims it's harassing Elon Musk |",
+        "url": "https://www.manufacturing.net/automotive/news/22068620/us-securities-agency-denies-claims-its-harassing-elon-musk"
+      },
+      "entities": [
+        {
+          "confidence": 0.75,
+          "context": "US securities agency denies claims it's harassing El",
+          "source": "ner",
+          "type": "location",
+          "value": "US"
+        },
+        {
+          "confidence": 0.85,
+          "context": "US securities agency denies claims it's harassing Elon Musk | Tesla and SpaceX Chief Executive Officer Elon M",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        },
+        {
+          "confidence": 0.75,
+          "context": "s agency denies claims it's harassing Elon Musk | Tesla and SpaceX Chief Executive Officer Elon Musk spea",
+          "source": "ner",
+          "type": "person",
+          "value": "Tesla"
+        },
+        {
+          "confidence": 0.75,
+          "context": "paceX Chief Executive Officer Elon Musk speaks at the SATELLITE Conference and Exhibition in Washington, Monday, March 9, 2020.",
+          "source": "ner",
+          "type": "location",
+          "value": "the SATELLITE Conference and Exhibition"
+        },
+        {
+          "confidence": 0.75,
+          "context": "aks at the SATELLITE Conference and Exhibition in Washington, Monday, March 9, 2020.",
+          "source": "ner",
+          "type": "location",
+          "value": "Washington"
+        },
+        {
+          "confidence": 0.75,
+          "context": "ATELLITE Conference and Exhibition in Washington, Monday, March 9, 2020.",
+          "source": "ner",
+          "type": "date",
+          "value": "Monday, March 9, 2020"
+        }
+      ],
+      "evidence_id": "evi_5319857cca104135",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 7,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_6361242",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.219751+00:00",
+        "processed_at": "2026-04-23T18:03:23.219751+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "Now, Elon Musk in a tweet has confirmed the news about the cyberattack in pursuits by the Russian hacker. ... over his cellular phone to the Tesla ...",
+        "title": "Musk confirms Russian hacker tried hiring Tesla worker for",
+        "url": "https://hackread.com/musk-confirms-russian-hacker-tesla-worker-malware-attack/"
+      },
+      "entities": [
+        {
+          "confidence": 0.85,
+          "context": "Russian hacker tried hiring Tesla worker for Now, Elon Musk in a tweet has confirmed the news about the cyber",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        }
+      ],
+      "evidence_id": "evi_da434fec8bf74e7e",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 8,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_1154073",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.233542+00:00",
+        "processed_at": "2026-04-23T18:03:23.233542+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "Elon Musk has stated that he has halted the use of cybersecurity firm CrowdStrike. ... Tesla CEO Elon Musk was with Salesforce CEO Marc Benioff last ...",
+        "title": "Tesla\u2019s Elon Musk discards CrowdStrike after global IT outage",
+        "url": "https://www.teslarati.com/tesla-elon-musk-discards-crowdstrike-global-it-outage/"
+      },
+      "entities": [
+        {
+          "confidence": 0.85,
+          "context": "Tesla\u2019s Elon Musk discards CrowdStrike after global IT outage Elon",
+          "source": "ner",
+          "type": "person",
+          "value": "Tesla\u2019s Elon Musk"
+        },
+        {
+          "confidence": 0.8,
+          "context": "Tesla\u2019s Elon Musk discards CrowdStrike after global IT outage Elon Musk has stated that",
+          "source": "ner",
+          "type": "organization",
+          "value": "CrowdStrike"
+        },
+        {
+          "confidence": 0.85,
+          "context": "Musk discards CrowdStrike after global IT outage Elon Musk has stated that he has halted the use of cybersec",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        },
+        {
+          "confidence": 0.75,
+          "context": "irm CrowdStrike. ... Tesla CEO Elon Musk was with Salesforce CEO Marc Benioff last ...",
+          "source": "ner",
+          "type": "person",
+          "value": "Salesforce"
+        },
+        {
+          "confidence": 0.85,
+          "context": ". ... Tesla CEO Elon Musk was with Salesforce CEO Marc Benioff last ...",
+          "source": "ner",
+          "type": "person",
+          "value": "Marc Benioff"
+        }
+      ],
+      "evidence_id": "evi_319950f11d9e4c36",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 9,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_2447987",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.245782+00:00",
+        "processed_at": "2026-04-23T18:03:23.245782+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.7,
+      "content": {
+        "body": "This incident has fueled fresh anxieties surrounding the safety of influential corporate leaders, including Tesla CEO Elon Musk.",
+        "title": "Tesla Boosts Security Measures for Elon Musk After Recent",
+        "url": "https://newslinker.co/tesla-boosts-security-measures-for-elon-musk-after-recent-events/"
+      },
+      "entities": [
+        {
+          "confidence": 0.8,
+          "context": "afety of influential corporate leaders, including Tesla CEO Elon Musk.",
+          "source": "ner",
+          "type": "organization",
+          "value": "Tesla"
+        },
+        {
+          "confidence": 0.85,
+          "context": "nfluential corporate leaders, including Tesla CEO Elon Musk.",
+          "source": "ner",
+          "type": "person",
+          "value": "Elon Musk"
+        }
+      ],
+      "evidence_id": "evi_741814606d354796",
+      "investigation_id": null,
+      "metadata": {
+        "result_position": 10,
+        "search_query": "Elon Musk Tesla cybersecurity incident 2024"
+      },
+      "source_id": "ddg_2236296",
+      "source_platform": "duckduckgo",
+      "source_type": "web_search",
+      "status": "processed",
+      "tags": [
+        "web_search",
+        "duckduckgo"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:03:23.256725+00:00",
+        "processed_at": "2026-04-23T18:03:23.256725+00:00",
+        "source_created": null
+      }
+    }
+  ],
+  "results_count": 25,
+  "status": "success",
+  "stored_count": 25
+}
+

@@ -1,0 +1,431 @@
+{
+  "domain": "github.com",
+  "intel_items": 7,
+  "results": [
+    {
+      "confidence": 0.9,
+      "content": {
+        "body": "WHOIS Registration Information\nDomain: github.com\nRegistrar: Example Registrar, Inc.\nRegistered Date: 2015-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02-15\nRegistrant: REDACTED FOR PRIVACY",
+        "title": "WHOIS Registration: github.com",
+        "url": "https://whois.icann.org/en/lookup?name=github.com"
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "WHOIS Registration: github.com WHOIS Registration Information\nDomain: github.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "github.com"
+        },
+        {
+          "confidence": 0.8,
+          "context": "WHOIS Registration: github.com WHOIS Registration Information\nDomain: github.com\nRegistrar: Example Registrar, Inc.\nRe",
+          "source": "ner",
+          "type": "organization",
+          "value": "WHOIS Registration Information\nDomain"
+        },
+        {
+          "confidence": 0.85,
+          "context": "tration Information\nDomain: github.com\nRegistrar: Example Registrar, Inc.\nRegistered Date: 2015-03-10\nExpiration Date",
+          "source": "ner",
+          "type": "person",
+          "value": "Example Registrar"
+        },
+        {
+          "confidence": 0.75,
+          "context": "gistrar: Example Registrar, Inc.\nRegistered Date: 2015-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02",
+          "source": "ner",
+          "type": "date",
+          "value": "2015-03-10"
+        },
+        {
+          "confidence": 0.75,
+          "context": "Inc.\nRegistered Date: 2015-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02-15\nRegistrant: REDACTED FOR",
+          "source": "ner",
+          "type": "date",
+          "value": "2025-03-10"
+        },
+        {
+          "confidence": 0.75,
+          "context": "5-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02-15\nRegistrant: REDACTED FOR PRIVACY",
+          "source": "ner",
+          "type": "date",
+          "value": "2024-02-15"
+        }
+      ],
+      "evidence_id": "evi_cff0babcb35446e9",
+      "investigation_id": null,
+      "metadata": {
+        "created_date": "2015-03-10",
+        "domain": "github.com",
+        "expiration_date": "2025-03-10",
+        "record_type": "whois",
+        "registrant_email": "admin@example.com",
+        "registrant_name": "REDACTED FOR PRIVACY",
+        "registrar": "Example Registrar, Inc.",
+        "updated_date": "2024-02-15"
+      },
+      "source_id": "whois_github.com",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "whois"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:02:59.291063+00:00",
+        "processed_at": "2026-04-23T18:02:59.291063+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS A Records:\n93.184.216.34",
+        "title": "DNS A Records: github.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 1.0,
+          "context": "DNS A Records: github.com DNS A Records:\n93.184.216.34",
+          "source": "regex",
+          "type": "ip_address",
+          "value": "93.184.216.34"
+        },
+        {
+          "confidence": 0.9,
+          "context": "DNS A Records: github.com DNS A Records:\n93.184.216.34",
+          "source": "regex",
+          "type": "domain",
+          "value": "github.com"
+        },
+        {
+          "confidence": 0.75,
+          "context": "DNS A Records: github.com DNS A Records:\n93.184.216.3",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS"
+        }
+      ],
+      "evidence_id": "evi_993a13bb581c480f",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "github.com",
+        "record_type": "A",
+        "records": [
+          "93.184.216.34"
+        ]
+      },
+      "source_id": "dns_github.com_A",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "a"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:02:59.296131+00:00",
+        "processed_at": "2026-04-23T18:02:59.296131+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS MX Records:\n10 mail.example.com\n20 mail2.example.com",
+        "title": "DNS MX Records: github.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "DNS MX Records: github.com DNS MX Records:\n10 mail.example.com\n20 mail2.exam",
+          "source": "regex",
+          "type": "domain",
+          "value": "github.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "DNS MX Records: github.com DNS MX Records:\n10 mail.example.com\n20 mail2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "mail.example.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "github.com DNS MX Records:\n10 mail.example.com\n20 mail2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "mail2.example.com"
+        },
+        {
+          "confidence": 0.75,
+          "context": "DNS MX Records: github.com DNS MX Records:\n10 mail.ex",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS"
+        }
+      ],
+      "evidence_id": "evi_e8de4cd081df48ba",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "github.com",
+        "record_type": "MX",
+        "records": [
+          "10 mail.example.com",
+          "20 mail2.example.com"
+        ]
+      },
+      "source_id": "dns_github.com_MX",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "mx"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:02:59.302258+00:00",
+        "processed_at": "2026-04-23T18:02:59.302258+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS NS Records:\nns1.example.com\nns2.example.com",
+        "title": "DNS NS Records: github.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "DNS NS Records: github.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "github.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "DNS NS Records: github.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "ns1.example.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "cords: github.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "ns2.example.com"
+        },
+        {
+          "confidence": 0.75,
+          "context": "DNS NS Records: github.com DNS NS Records:\nns1.exampl",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS"
+        },
+        {
+          "confidence": 0.8,
+          "context": "cords: github.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "ner",
+          "type": "organization",
+          "value": "ns2.example.com"
+        }
+      ],
+      "evidence_id": "evi_e16125bd6fe04f8c",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "github.com",
+        "record_type": "NS",
+        "records": [
+          "ns1.example.com",
+          "ns2.example.com"
+        ]
+      },
+      "source_id": "dns_github.com_NS",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "ns"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:02:59.309002+00:00",
+        "processed_at": "2026-04-23T18:02:59.309002+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS TXT Records:\nv=spf1 include:example.com ~all\ngoogle-site-verification=abc123...",
+        "title": "DNS TXT Records: github.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "DNS TXT Records: github.com DNS TXT Records:\nv=spf1 include:example.com ~all",
+          "source": "regex",
+          "type": "domain",
+          "value": "github.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "cords: github.com DNS TXT Records:\nv=spf1 include:example.com ~all\ngoogle-site-verification=abc123...",
+          "source": "regex",
+          "type": "domain",
+          "value": "example.com"
+        },
+        {
+          "confidence": 0.8,
+          "context": "DNS TXT Records: github.com DNS TXT Records:\nv=spf1 include:examp",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS TXT Records"
+        }
+      ],
+      "evidence_id": "evi_945d434e173c4f61",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "github.com",
+        "record_type": "TXT",
+        "records": [
+          "v=spf1 include:example.com ~all",
+          "google-site-verification=abc123..."
+        ]
+      },
+      "source_id": "dns_github.com_TXT",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "txt"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:02:59.317669+00:00",
+        "processed_at": "2026-04-23T18:02:59.317669+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.85,
+      "content": {
+        "body": "Found 5 subdomains:\nwww.example.com\nmail.example.com\nftp.example.com\napi.example.com\ncdn.example.com",
+        "title": "Subdomains: github.com",
+        "url": ""
+      },
+      "entities": [],
+      "evidence_id": "evi_5c54bd67f5db411d",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "github.com",
+        "subdomain_count": 5,
+        "subdomains": [
+          "www.example.com",
+          "mail.example.com",
+          "ftp.example.com",
+          "api.example.com",
+          "cdn.example.com"
+        ]
+      },
+      "source_id": "subdomains_github.com",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "subdomains"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:02:59.317669+00:00",
+        "processed_at": "2026-04-23T18:02:59.317669+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.9,
+      "content": {
+        "body": "SSL Certificate Information\nSubject: *.github.com\nIssuer: Let's Encrypt Authority X3\nValid From: 2024-01-01\nValid Until: 2025-04-01\nAlgorithm: sha256WithRSAEncryption",
+        "title": "SSL Certificate: github.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "SSL Certificate: github.com SSL Certificate Information\nSubject: *.github.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "github.com"
+        },
+        {
+          "confidence": 0.8,
+          "context": "SSL Certificate: github.com SSL Certificate Information\nSubject: *.github.com\nIssuer: Let's Encrypt Authority X3",
+          "source": "ner",
+          "type": "organization",
+          "value": "SSL Certificate Information\nSubject"
+        },
+        {
+          "confidence": 0.75,
+          "context": "om\nIssuer: Let's Encrypt Authority X3\nValid From: 2024-01-01\nValid Until: 2025-04-01\nAlgorithm: sha256WithRSAE",
+          "source": "ner",
+          "type": "date",
+          "value": "2024-01-01"
+        },
+        {
+          "confidence": 0.75,
+          "context": "Authority X3\nValid From: 2024-01-01\nValid Until: 2025-04-01\nAlgorithm: sha256WithRSAEncryption",
+          "source": "ner",
+          "type": "date",
+          "value": "2025-04-01"
+        }
+      ],
+      "evidence_id": "evi_b49fc484e3bb4413",
+      "investigation_id": null,
+      "metadata": {
+        "algorithm": "sha256WithRSAEncryption",
+        "domain": "github.com",
+        "issuer": "Let's Encrypt Authority X3",
+        "record_type": "ssl",
+        "subject": "*.github.com",
+        "valid_from": "2024-01-01",
+        "valid_until": "2025-04-01"
+      },
+      "source_id": "ssl_github.com",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "ssl",
+        "certificate"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:02:59.329579+00:00",
+        "processed_at": "2026-04-23T18:02:59.329579+00:00",
+        "source_created": null
+      }
+    }
+  ],
+  "status": "success",
+  "stored_count": 7
+}
+

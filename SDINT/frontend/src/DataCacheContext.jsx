@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 
+/* eslint-disable react-refresh/only-export-components */
+
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sd-int.onrender.com/api');
 
 const DataCacheContext = createContext();
@@ -12,6 +14,20 @@ export function useDataCache() {
 export function DataCacheProvider({ children }) {
   // Centralized cache for all page data
   const [cache, setCache] = useState({});
+
+  const refreshInBackground = useCallback(async (key, url, method, body) => {
+    try {
+      let res;
+      if (method === 'POST') {
+        res = await axios.post(url, body);
+      } else {
+        res = await axios.get(url);
+      }
+      setCache(prev => ({ ...prev, [key]: res.data }));
+    } catch {
+      // Silently fail on background refresh
+    }
+  }, []);
 
   // Generic fetch-with-cache: returns cached data instantly if available,
   // fetches in background to refresh, and updates cache when done.
@@ -41,21 +57,7 @@ export function DataCacheProvider({ children }) {
       if (cache[key]) return cache[key];
       throw e;
     }
-  }, [cache]);
-
-  const refreshInBackground = async (key, url, method, body) => {
-    try {
-      let res;
-      if (method === 'POST') {
-        res = await axios.post(url, body);
-      } else {
-        res = await axios.get(url);
-      }
-      setCache(prev => ({ ...prev, [key]: res.data }));
-    } catch (e) {
-      // Silently fail on background refresh
-    }
-  };
+  }, [cache, refreshInBackground]);
 
   // Direct cache getter (for checking if data exists without fetching)
   const getCached = useCallback((key) => cache[key] || null, [cache]);

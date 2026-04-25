@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
+const DivergenceTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const point = payload[0].payload;
+    const c = point.fullData;
+    return (
+      <div style={{ background: 'rgba(25, 28, 41, 0.95)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', borderRadius: '8px', color: '#fff' }}>
+        <h4>{point.subject}: {c.viewpoint_label}</h4>
+        <p>Sentiment: {c.avg_sentiment}</p>
+        <p>Toxicity: {c.toxicity_ratio}</p>
+        <p>Comments: {c.comment_count}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const OpinionDivergencePanel = ({ postId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,21 +50,6 @@ const OpinionDivergencePanel = ({ postId }) => {
     C_Count: maxComments > 0 ? c.comment_count / maxComments : 0,
     fullData: c
   }));
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const c = radarData.find(d => d.subject === label).fullData;
-      return (
-        <div style={{ background: 'rgba(25, 28, 41, 0.95)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', borderRadius: '8px', color: '#fff' }}>
-          <h4>{label}: {c.viewpoint_label}</h4>
-          <p>Sentiment: {c.avg_sentiment}</p>
-          <p>Toxicity: {c.toxicity_ratio}</p>
-          <p>Comments: {c.comment_count}</p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   const getDivergenceColor = (val) => {
     if (val < 0.5) return '#10b981';
@@ -89,7 +90,7 @@ const OpinionDivergencePanel = ({ postId }) => {
             <Radar name="Sentiment (0=Neg, 1=Pos)" dataKey="A_Sentiment" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
             <Radar name="Toxicity Ratio" dataKey="B_Toxicity" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
             <Radar name="Volume" dataKey="C_Count" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<DivergenceTooltip />} />
           </RadarChart>
         </ResponsiveContainer>
 

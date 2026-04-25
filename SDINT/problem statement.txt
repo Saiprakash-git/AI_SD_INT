@@ -1,0 +1,83 @@
+Problem Statement 18: AI Based OSINT Analysis and monitoring system and social 
+media stacks 
+ 
+Organization Name IAF 
+Challenge Title  AI Based OSINT Analysis and monitoring system and social media 
+stacks 
+Problem Statement   
+To develop an AI-Powered OSINT Analysis and Monitoring system 
+that can apply advanced and state of the art AI and statistical 
+Algorithms to undertake analysis and real time monitoring of user 
+defined subjects/ topics/ information domain through sifting of vast 
+amount of global OSINT Data. 
+Challenge Brief/ 
+Definition 
+1. The surge of OSINT data coupled with the exponential increase in 
+computational capabilities, necessitates the integration of 
+advanced algorithms to effectively manage and analyse this 
+information. 
+2. Traditional methods of data handling are increasingly inadequate 
+due to the sheer volume of data, limited manpower, and the time
+sensitive nature of intelligence needs. Recent conflicts testify the 
+same. 
+3. Employment of advanced AI algorithms such as Natural Language 
+Processing (NLP), Large Language Models (LLM), Web 
+Scraping, Computer Vision, clustering tools and other data mining 
+techniques is now essential. These methods can automate the 
+extraction, analysis and interpretation of data. 
+4. Identification and weeding out artificially generated content/ deep 
+fake content often called as “Misinformation” also needs to be 
+addressed to produce actionable and accurate intelligence. These 
+activities are not only labour-intensive but also prone to 
+inconsistencies and errors due to human limitation. 
+5. Therefore, there is a critical need for an OSINT Analysis and 
+monitoring system that can automate these processes to a very 
+large extent that provides relevant, reliable and timely information 
+from vast amount of global data. Post extraction and analysis of 
+OSINT data through user defined contextual filters, intuitive 
+presentation of actionable intelligence is vital which is also 
+proposed to be addressed through an interactive application as the 
+foundation. 
+6. Broad plan is to develop a 5 module application. 
+ 
+ADITI 4.0 | Challenges                                                  42 
+ 
+6.1 Module 1- Source credibility check definition of     credibility 
+based on user defined factors/ criterion. 
+6.2 Module 2- Open-Source content analysis. 
+6.3 Module 3- Social media content analysis. 
+6.4 Module 4- Images & video analysis. 
+6.5 Module 5- Report extraction and GIS based outputs (Intuitive 
+visualisation) based on open source LLMs). 
+ 
+7.  Data mining and aggregation for sifting through vast amounts of 
+data to extract and aggregates the most relevant information. User 
+defined real time monitoring of specific aspects. 
+Existing Solution (if 
+any) Nil 
+Technology Domain AI/ML/OSINT 
+Application/ Use 
+Case  
+The tool would be utilised as one of the inputs to the overall 
+Intelligence architecture of IAF. 
+Future Expectation 
+from the prototype 
+developed  
+Serve as a vital intelligence system/ application and a comprehensive 
+OSINT analysis tool at various levels of organisation depending on 
+dynamic need to fulfil specific tasks. 
+Project Outcome Development of AI powered OSINT tool capable of analysis & real 
+time monitoring of user defined subject & social media stacks. 
+Testing Certification All relevant applicable tests as defined by certifying/ QA agencies 
+during D&D.  
+Potential Market for 
+product/ technology 
+(Defence/ 
+Commercial) 
+Defence 
+Business Case (Bulk 
+Order/ repeat 
+order/export 
+potential) 
+All three services (IAF/IA/IN) along with other Indian Security 
+Organisations

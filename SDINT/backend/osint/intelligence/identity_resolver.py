@@ -6,18 +6,59 @@ Core functionality:
   - Identity profile creation (unified view of one person/entity)
   - Relationship mapping (who connected to whom)
   - Confidence scoring for identity links
+  - Full person dossier generation from evidence
 """
 
+import re
 import logging
+import hashlib
 from typing import List, Dict, Set, Tuple, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
+from collections import defaultdict
+
+try:
+    import jellyfish
+    JELLYFISH_AVAILABLE = True
+except ImportError:
+    JELLYFISH_AVAILABLE = False
 
 from osint.db.evidence_store import EvidenceStore
 from osint.schemas.evidence_schema import EntityType
 
 
 logger = logging.getLogger(__name__)
+
+
+# ─── Resolved Person Entity ─────────────────────────────────────────────────
+
+@dataclass
+class ResolvedPerson:
+    """Canonical person entity built from merged evidence."""
+    person_id: str
+    investigation_id: Optional[str] = None
+    canonical_name: Optional[str] = None
+    name_first: Optional[str] = None
+    name_last: Optional[str] = None
+    aliases: List[str] = field(default_factory=list)
+    usernames: List[Dict] = field(default_factory=list)
+    emails: List[Dict] = field(default_factory=list)
+    phones: List[str] = field(default_factory=list)
+    locations: List[str] = field(default_factory=list)
+    employers: List[str] = field(default_factory=list)
+    domains: List[str] = field(default_factory=list)
+    social_profiles: List[Dict] = field(default_factory=list)
+    breach_findings: List[Dict] = field(default_factory=list)
+    evidence_ids: List[str] = field(default_factory=list)
+    match_confidence: float = 0.0
+    risk_score: float = 0.0
+    risk_level: str = "LOW"
+    intelligence_summary: str = ""
+    raw_evidence_count: int = 0
+    created_at: str = ""
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
 
 
 @dataclass
@@ -77,6 +118,240 @@ class IdentityResolver:
         # Caches for performance
         self._entity_cache: Dict[str, List[Dict]] = {}
         self._equivalence_cache: Dict[Tuple, EntityEquivalence] = {}
+
+    # ─── Full Evidence Resolution ────────────────────────────────────────
+
+    def resolve_from_evidence(
+        self,
+        evidence_items: List,
+        investigation_id: Optional[str] = None,
+        raw_query: str = ""
+    ) -> ResolvedPerson:
+        """
+        Build a ResolvedPerson from all evidence items.
+        This is the main entry point for full identity resolution.
+
+        Args:
+            evidence_items: List of EvidenceItem objects or dicts
+            investigation_id: Optional investigation ID
+            raw_query: The original query string
+
+        Returns:
+            ResolvedPerson with all merged intelligence
+        """
+        person_id = hashlib.md5(
+            f"{investigation_id or ''}{raw_query}{datetime.now(timezone.utc).isoformat()}".encode()
+        ).hexdigest()[:16]
+
+        person = ResolvedPerson(
+            person_id=f"person_{person_id}",
+            investigation_id=investigation_id,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+
+        # Collect structured data from all evidence
+        all_names = []
+        all_emails = set()
+        all_phones = set()
+        all_usernames = []
+        all_locations = []
+        all_employers = []
+        all_domains = set()
+        all_breach_findings = []
+
+        for item in evidence_items:
+            # Handle both EvidenceItem objects and dicts
+            if hasattr(item, 'to_dict'):
+                d = item.to_dict()
+            elif isinstance(item, dict):
+                d = item
+            else:
+                continue
+
+            person.evidence_ids.append(d.get("evidence_id", ""))
+
+            # Extract entities
+            for entity in d.get("entities", []):
+                etype = entity.get("type", "")
+                evalue = entity.get("value", "").strip()
+                if not evalue:
+                    continue
+
+                if etype == "person" and len(evalue) > 2:
+                    all_names.append(evalue)
+                elif etype == "email" and re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', evalue):
+                    all_emails.add(evalue.lower())
+                elif etype == "username":
+                    all_usernames.append({"username": evalue, "platform": "unknown", "url": "", "confidence": entity.get("confidence", 0.7)})
+                elif etype == "phone":
+                    digits = re.sub(r'\D', '', evalue)
+                    if 8 <= len(digits) <= 15:
+                        all_phones.add(f"+{digits}")
+                elif etype == "location" and len(evalue) > 1:
+                    all_locations.append(evalue)
+                elif etype == "organization" and len(evalue) > 1:
+                    all_employers.append(evalue)
+                elif etype == "domain":
+                    all_domains.add(evalue.lower())
+
+            # Extract from metadata
+            metadata = d.get("metadata", {})
+            if metadata.get("username") and metadata.get("platform"):
+                all_usernames.append({
+                    "username": metadata["username"],
+                    "platform": metadata["platform"],
+                    "url": metadata.get("profile_url", d.get("content", {}).get("url", "")),
+                    "confidence": d.get("confidence", 0.7),
+                })
+
+            # Breach findings
+            source_type = d.get("source_type", "")
+            if source_type == "breach_data" or metadata.get("severity"):
+                all_breach_findings.append({
+                    "source": source_type,
+                    "source_url": d.get("content", {}).get("url", ""),
+                    "severity": metadata.get("severity", "MEDIUM"),
+                    "details": d.get("content", {}).get("body", "")[:300],
+                })
+
+        # Resolve canonical name
+        person.canonical_name = self._resolve_canonical_name(all_names)
+        if person.canonical_name:
+            parts = person.canonical_name.strip().split()
+            person.name_first = parts[0] if parts else None
+            person.name_last = parts[-1] if len(parts) > 1 else None
+
+        person.aliases = list(set(all_names))[:20]
+        person.emails = [{"email": e, "source": "evidence"} for e in all_emails]
+        person.phones = list(all_phones)[:10]
+        person.usernames = self._dedupe_usernames(all_usernames)
+        person.locations = list(set(all_locations))[:10]
+        person.employers = list(set(all_employers))[:10]
+        person.domains = list(all_domains)[:10]
+        person.social_profiles = [
+            {"platform": u["platform"], "url": u["url"], "username": u["username"]}
+            for u in person.usernames if u.get("url")
+        ]
+        person.breach_findings = all_breach_findings
+        person.raw_evidence_count = len(evidence_items)
+
+        # Score
+        person.match_confidence = self._compute_match_confidence(person)
+        person.risk_score = self._compute_risk_score(person)
+        person.risk_level = "HIGH" if person.risk_score > 0.7 else "MEDIUM" if person.risk_score > 0.4 else "LOW"
+
+        # Generate summary
+        person.intelligence_summary = self._generate_summary(person, raw_query)
+
+        self.logger.info(
+            f"Resolved person '{person.canonical_name or raw_query}': "
+            f"{len(person.emails)} emails, {len(person.usernames)} usernames, "
+            f"risk={person.risk_level}, confidence={person.match_confidence:.0%}"
+        )
+
+        return person
+
+    def _resolve_canonical_name(self, names: List[str]) -> Optional[str]:
+        """Pick the most representative name from candidates."""
+        if not names:
+            return None
+        freq = defaultdict(int)
+        for n in names:
+            clean = n.strip().title()
+            if 2 <= len(clean.split()) <= 4:
+                freq[clean] += 1
+        if not freq:
+            return names[0].strip().title()
+        return max(freq, key=freq.get)
+
+    def _dedupe_usernames(self, usernames: List[Dict]) -> List[Dict]:
+        """Remove duplicate usernames, prefer higher confidence."""
+        seen = {}
+        for u in usernames:
+            key = (u["username"].lower(), u.get("platform", "").lower())
+            if key not in seen or u.get("confidence", 0) > seen[key].get("confidence", 0):
+                seen[key] = u
+        return list(seen.values())
+
+    def _compute_match_confidence(self, person: ResolvedPerson) -> float:
+        """Score 0–1 based on corroborating evidence."""
+        score = 0.0
+        if person.canonical_name:
+            score += 0.20
+        if person.emails:
+            score += min(0.25, len(person.emails) * 0.10)
+        if person.phones:
+            score += 0.15
+        if person.usernames:
+            score += min(0.25, len(person.usernames) * 0.05)
+        if person.locations:
+            score += 0.05
+        if person.employers:
+            score += 0.05
+        if person.breach_findings:
+            score += 0.05
+        return round(min(score, 1.0), 2)
+
+    def _compute_risk_score(self, person: ResolvedPerson) -> float:
+        """Compute risk indicators from breach exposure and footprint."""
+        score = 0.0
+        if len(person.breach_findings) > 0:
+            score += 0.35
+        if len(person.breach_findings) > 3:
+            score += 0.20
+        if len(person.usernames) > 8:
+            score += 0.15
+        if len(person.emails) > 5:
+            score += 0.10
+        for b in person.breach_findings:
+            if b.get("severity") == "HIGH":
+                score += 0.10
+                break
+        return round(min(score, 1.0), 2)
+
+    def _generate_summary(self, person: ResolvedPerson, raw_query: str) -> str:
+        """Generate human-readable intelligence summary."""
+        lines = []
+
+        if person.canonical_name:
+            lines.append(f"Target identified as: {person.canonical_name}.")
+        else:
+            lines.append(f"Target query: '{raw_query}'. Name could not be conclusively resolved.")
+
+        if person.usernames:
+            platforms = list(set(u.get("platform", "") for u in person.usernames))[:5]
+            lines.append(f"Online presence detected on {len(person.usernames)} platform(s): {', '.join(p for p in platforms if p)}.")
+
+        if person.emails:
+            lines.append(f"{len(person.emails)} email(s) associated: {', '.join(e['email'] for e in person.emails[:3])}.")
+
+        if person.breach_findings:
+            lines.append(f"BREACH ALERT: Target appears in {len(person.breach_findings)} breach/paste source(s). Risk level: {person.risk_level}.")
+        else:
+            lines.append("No breach exposure detected.")
+
+        if person.locations:
+            lines.append(f"Associated locations: {', '.join(person.locations[:3])}.")
+
+        if person.employers:
+            lines.append(f"Associated organisations: {', '.join(person.employers[:3])}.")
+
+        lines.append(f"Match confidence: {int(person.match_confidence * 100)}% based on {person.raw_evidence_count} evidence items.")
+
+        return " ".join(lines)
+
+    def save_resolved_person(self, person: ResolvedPerson, db) -> str:
+        """Persist resolved person to MongoDB."""
+        doc = person.to_dict()
+        db.resolved_persons.replace_one(
+            {"person_id": person.person_id},
+            doc,
+            upsert=True
+        )
+        self.logger.info(f"Saved resolved person {person.person_id}")
+        return person.person_id
+
+    # ─── Entity-based Resolution Methods ─────────────────────────────────
 
     def resolve_by_email(self, email: str, investigation_id: Optional[str] = None) -> IdentityProfile:
         """

@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import logging
+import re
 from datetime import datetime, timezone
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -39,6 +40,20 @@ from osint.connectors import (
     HIBPConnector,
     DomainIntelligenceConnector,
 )
+
+# NEW OSINT Connectors
+from osint.connectors.username_connector import UsernameConnector
+from osint.connectors.breach_connector import BreachConnector
+from osint.connectors.hackernews_connector import HackerNewsConnector
+from osint.connectors.github_connector import GitHubConnector
+
+# NEW OSINT Services
+from osint.services.identity_resolver import IdentityResolver as NewIdentityResolver
+from osint.services.narrative_builder import NarrativeBuilder as NewNarrativeBuilder
+from osint.services.task_queue import TaskQueue
+from osint.services.investigation_orchestrator import run_full_investigation, parse_pivot
+from osint.services.source_credibility import SourceCredibility
+from osint.services.watchlist_service import WatchlistService
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -224,7 +239,7 @@ def analyze_link_api():
 # OSINT Evidence Engine Endpoints
 # ============================================================================
 
-@app.route('/api/osint/evidence', methods=['GET'])
+@app.route('/api/osint/evidence/store', methods=['GET'])
 def get_evidence():
     """Get evidence items with optional filters."""
     source_type = request.args.get('source_type')
@@ -259,8 +274,47 @@ def get_evidence_by_entity():
     limit = int(request.args.get('limit', 50))
     if not entity_type or not entity_value:
         return jsonify({"error": "Both 'type' and 'value' params required"}), 400
-    items = evidence_store.get_by_entity(entity_type, entity_value, limit=limit)
-    return jsonify(parse_json([item.to_dict() for item in items]))
+    normalized = entity_value.strip().lower()
+
+    # 1) Query legacy evidence store items.
+    store_items = evidence_store.get_by_entity(entity_type, entity_value, limit=limit)
+    store_docs = [item.to_dict() for item in store_items]
+
+    # 2) Query session-based evidence produced by investigation orchestrator.
+    #    This supports both scalar and list extracted fields.
+    mongo_query = {
+        "$or": [
+            {f"extracted_fields.{entity_type}": {"$regex": f"^{re.escape(entity_value)}$", "$options": "i"}},
+            {
+                f"extracted_fields.{entity_type}s": {
+                    "$elemMatch": {"$regex": f"^{re.escape(entity_value)}$", "$options": "i"}
+                }
+            },
+            {"raw_text": {"$regex": re.escape(entity_value), "$options": "i"}},
+        ]
+    }
+    session_docs = list(db.evidence_items.find(mongo_query, {"_id": 0}).limit(limit))
+
+    def _is_match(doc):
+        fields = (doc.get("extracted_fields") or {})
+        singular = fields.get(entity_type)
+        plural = fields.get(f"{entity_type}s", [])
+
+        if isinstance(singular, str) and singular.strip().lower() == normalized:
+            return True
+        if isinstance(plural, list):
+            for val in plural:
+                if isinstance(val, str) and val.strip().lower() == normalized:
+                    return True
+        return normalized in (doc.get("raw_text", "").lower())
+
+    filtered_session_docs = [doc for doc in session_docs if _is_match(doc)]
+    merged = store_docs + filtered_session_docs
+    return jsonify({
+        "status": "success",
+        "count": len(merged),
+        "evidence": parse_json(merged[:limit])
+    })
 
 @app.route('/api/osint/evidence/entity-network', methods=['GET'])
 def get_entity_network():
@@ -329,6 +383,25 @@ def create_investigation():
     
     except Exception as e:
         logger.error(f"Error creating investigation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/investigations', methods=['GET'])
+def list_investigations():
+    """List all investigations."""
+    try:
+        limit = int(request.args.get('limit', 50))
+        status = request.args.get('status')  # Optional filter
+        
+        investigations = inv_manager.list_investigations(limit=limit, status=status)
+        
+        return jsonify({
+            "status": "success",
+            "count": len(investigations),
+            "investigations": [inv.to_dict() for inv in investigations]
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error listing investigations: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/investigations/<inv_id>', methods=['GET'])
@@ -540,14 +613,20 @@ def analyze_identity():
         logger.error(f"Error analyzing identity: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/analyze/pivot', methods=['POST'])
+@app.route('/api/analyze/pivot', methods=['GET', 'POST'])
 def analyze_pivot():
     """Find related entities (pivot discovery)."""
     try:
-        data = request.get_json()
-        entity_type = data.get('type', '')
-        entity_value = data.get('value', '')
-        depth = data.get('depth', 1)
+        if request.method == 'GET':
+            entity_type = request.args.get('type', '')
+            entity_value = request.args.get('value', '')
+            depth = request.args.get('depth', 1)
+        else:
+            data = request.get_json() or {}
+            entity_type = data.get('type', '')
+            entity_value = data.get('value', '')
+            depth = data.get('depth', 1)
+        depth = int(depth)
         
         if not entity_type or not entity_value:
             return jsonify({"error": "type and value required"}), 400
@@ -722,6 +801,381 @@ def get_stats():
     
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# NEW OSINT Investigation Framework - IDENTITY DISCOVERY FOCUS
+# ============================================================================
+
+# Initialize task queue
+task_queue = TaskQueue.get_instance()
+task_queue.set_db(db)
+
+
+@app.route('/api/osint/investigate', methods=['POST'])
+def start_investigation():
+    """Start a new OSINT investigation on a target."""
+    try:
+        data = request.get_json() or {}
+        query = data.get('query', '').strip()
+        
+        if not query:
+            return jsonify({"error": "query required"}), 400
+        
+        # Create investigation session
+        session_id = str(__import__('uuid').uuid4())
+        
+        # Parse pivot type
+        pivot = parse_pivot(query)
+        
+        # Optional per-session credibility profile override
+        custom_weights = SourceCredibility.validate_weights(data.get("credibility_weights", {}))
+
+        # Initialize session
+        db.investigation_sessions.insert_one({
+            "session_id": session_id,
+            "raw_query": query,
+            "pivot_type": pivot["type"],
+            "status": "queued",
+            "credibility_weights": custom_weights,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        
+        # Submit to background task queue
+        task_id = task_queue.submit(
+            run_full_investigation,
+            session_id,
+            query,
+            db,
+            task_name=f"investigate_{pivot['type']}_{query[:20]}"
+        )
+        
+        logger.info(f"Investigation started: session={session_id}, query={query}, task={task_id}")
+        
+        return jsonify({
+            "status": "queued",
+            "session_id": session_id,
+            "task_id": task_id,
+            "pivot_type": pivot["type"],
+            "query": query,
+            "credibility_weights": custom_weights,
+            "message": f"Investigation started for '{query}'"
+        }), 202  # 202 Accepted
+    
+    except Exception as e:
+        logger.error(f"Error starting investigation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/session/<session_id>', methods=['GET'])
+def get_investigation_session(session_id):
+    """Get investigation session status and results."""
+    try:
+        session = db.investigation_sessions.find_one(
+            {"session_id": session_id},
+            {"_id": 0}
+        )
+        
+        if not session:
+            return jsonify({"error": "session not found"}), 404
+        
+        # Get resolved person
+        person = db.resolved_persons.find_one(
+            {"session_id": session_id},
+            {"_id": 0}
+        )
+        
+        # Get narrative artifacts
+        artifacts = db.narrative_artifacts.find_one(
+            {"session_id": session_id},
+            {"_id": 0}
+        )
+        
+        return jsonify({
+            "session": parse_json(session),
+            "person": parse_json(person),
+            "artifacts": parse_json(artifacts),
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error getting session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/settings/credibility', methods=['GET', 'POST'])
+def credibility_settings():
+    """Get or set global source credibility connector weights."""
+    try:
+        if request.method == 'GET':
+            doc = db.osint_settings.find_one({"_id": "credibility_weights"}, {"_id": 0}) or {}
+            return jsonify({
+                "status": "success",
+                "weights": doc.get("weights", SourceCredibility.BASE_SCORES)
+            }), 200
+
+        data = request.get_json() or {}
+        weights = SourceCredibility.validate_weights(data.get("weights", {}))
+        merged = dict(SourceCredibility.BASE_SCORES)
+        merged.update(weights)
+        db.osint_settings.update_one(
+            {"_id": "credibility_weights"},
+            {"$set": {"weights": merged, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        return jsonify({"status": "success", "weights": merged}), 200
+    except Exception as e:
+        logger.error(f"Error handling credibility settings: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/session/<session_id>/analysis', methods=['GET'])
+def get_session_analysis(session_id):
+    """Get open-source content analysis artifact for a session."""
+    try:
+        artifacts = db.narrative_artifacts.find_one({"session_id": session_id}, {"_id": 0}) or {}
+        return jsonify({
+            "status": "success",
+            "session_id": session_id,
+            "analysis": artifacts.get("open_source_analysis", {})
+        }), 200
+    except Exception as e:
+        logger.error(f"Error getting session analysis: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/session/<session_id>/connectors', methods=['GET'])
+def get_session_connector_runs(session_id):
+    """Get per-connector execution stats for a session."""
+    try:
+        runs = list(
+            db.connector_runs.find({"session_id": session_id}, {"_id": 0})
+            .sort("started_at", 1)
+        )
+        return jsonify({
+            "status": "success",
+            "session_id": session_id,
+            "count": len(runs),
+            "runs": runs
+        }), 200
+    except Exception as e:
+        logger.error(f"Error getting connector runs: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/evidence', methods=['GET'])
+def list_evidence():
+    """List all evidence for optional filtering."""
+    try:
+        session_id = request.args.get('session_id')
+        source_type = request.args.get('source_type')
+        limit = int(request.args.get('limit', 50))
+        
+        query = {}
+        if session_id:
+            query["session_id"] = session_id
+        if source_type:
+            query["extracted_fields.platform"] = source_type
+        
+        evidence = list(db.evidence_items.find(query, {"_id": 0}).limit(limit))
+        
+        return jsonify({
+            "status": "success",
+            "count": len(evidence),
+            "evidence": evidence
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error listing evidence: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/tasks/<task_id>', methods=['GET'])
+def get_task_status(task_id):
+    """Get background task status."""
+    try:
+        status = task_queue.get_status(task_id)
+        return jsonify(status), 200
+    except Exception as e:
+        logger.error(f"Error getting task status: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/sessions', methods=['GET'])
+def list_sessions():
+    """List all investigations."""
+    try:
+        limit = int(request.args.get('limit', 20))
+        sessions = list(db.investigation_sessions.find({}, {"_id": 0}).sort("created_at", -1).limit(limit))
+        
+        return jsonify({
+            "status": "success",
+            "count": len(sessions),
+            "sessions": parse_json(sessions)
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error listing sessions: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/watchlists', methods=['GET', 'POST'])
+def osint_watchlists():
+    """Create/list watchlist targets for ongoing monitoring."""
+    try:
+        if request.method == 'GET':
+            active_only = request.args.get('active_only', 'false').lower() == 'true'
+            limit = int(request.args.get('limit', 100))
+            items = WatchlistService.list(db, active_only=active_only, limit=limit)
+            return jsonify({"status": "success", "count": len(items), "watchlists": items}), 200
+
+        data = request.get_json() or {}
+        query = (data.get("query") or "").strip()
+        if not query:
+            return jsonify({"error": "query required"}), 400
+        item = WatchlistService.create(
+            db,
+            query=query,
+            label=(data.get("label") or "").strip(),
+            pivot_type=(data.get("pivot_type") or "").strip(),
+            metadata=data.get("metadata", {}),
+        )
+        return jsonify({"status": "success", "watchlist": item}), 201
+    except Exception as e:
+        logger.error(f"Error handling watchlists: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/watchlists/<watch_id>', methods=['PATCH'])
+def update_watchlist(watch_id):
+    """Activate/deactivate watchlist item."""
+    try:
+        data = request.get_json() or {}
+        active = data.get("active")
+        if active is None:
+            return jsonify({"error": "active required"}), 400
+        ok = WatchlistService.set_active(db, watch_id, bool(active))
+        if not ok:
+            return jsonify({"error": "watchlist not found"}), 404
+        return jsonify({"status": "success", "watch_id": watch_id, "active": bool(active)}), 200
+    except Exception as e:
+        logger.error(f"Error updating watchlist: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/session/<session_id>/alerts', methods=['GET'])
+def get_session_alerts(session_id):
+    """Get generated alerts for a finished investigation session."""
+    try:
+        session = db.investigation_sessions.find_one({"session_id": session_id}, {"_id": 0})
+        if not session:
+            return jsonify({"error": "session not found"}), 404
+        person = db.resolved_persons.find_one({"session_id": session_id}, {"_id": 0}) or {}
+        artifacts = db.narrative_artifacts.find_one({"session_id": session_id}, {"_id": 0}) or {}
+        alerts = WatchlistService.evaluate_session_alerts(db, session, person, artifacts)
+        return jsonify({"status": "success", "session_id": session_id, "count": len(alerts), "alerts": alerts}), 200
+    except Exception as e:
+        logger.error(f"Error getting session alerts: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/watchlists/run', methods=['POST'])
+def run_watchlists():
+    """Queue investigations for active watchlist targets."""
+    try:
+        limit = int((request.get_json() or {}).get("limit", 10))
+        items = WatchlistService.list(db, active_only=True, limit=limit)
+        queued = []
+        for item in items:
+            query = (item.get("query") or "").strip()
+            if not query:
+                continue
+            session_id = str(__import__('uuid').uuid4())
+            pivot = parse_pivot(query)
+            db.investigation_sessions.insert_one({
+                "session_id": session_id,
+                "raw_query": query,
+                "pivot_type": pivot["type"],
+                "status": "queued",
+                "watch_id": item.get("watch_id"),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+            task_id = task_queue.submit(
+                run_full_investigation,
+                session_id,
+                query,
+                db,
+                task_name=f"watch_{pivot['type']}_{query[:20]}"
+            )
+            db.watchlists.update_one(
+                {"watch_id": item.get("watch_id")},
+                {"$set": {
+                    "last_checked_at": datetime.now(timezone.utc).isoformat(),
+                    "last_session_id": session_id,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }}
+            )
+            queued.append({"watch_id": item.get("watch_id"), "session_id": session_id, "task_id": task_id})
+        return jsonify({"status": "success", "queued": queued, "count": len(queued)}), 202
+    except Exception as e:
+        logger.error(f"Error running watchlists: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/osint/session/<session_id>/report', methods=['GET'])
+def get_session_report(session_id):
+    """Generate analyst-friendly markdown intelligence report."""
+    try:
+        session = db.investigation_sessions.find_one({"session_id": session_id}, {"_id": 0})
+        if not session:
+            return jsonify({"error": "session not found"}), 404
+        person = db.resolved_persons.find_one({"session_id": session_id}, {"_id": 0}) or {}
+        artifacts = db.narrative_artifacts.find_one({"session_id": session_id}, {"_id": 0}) or {}
+        analysis = artifacts.get("open_source_analysis", {}) or {}
+        alerts = WatchlistService.evaluate_session_alerts(db, session, person, artifacts)
+
+        report_lines = [
+            f"# OSINT Investigation Report",
+            f"",
+            f"- Session: `{session_id}`",
+            f"- Query: `{session.get('raw_query', '')}`",
+            f"- Pivot: `{session.get('pivot_type', '')}`",
+            f"- Status: `{session.get('status', '')}`",
+            f"- Risk Level: `{session.get('risk_level', 'UNKNOWN')}`",
+            f"- Match Confidence: `{session.get('match_confidence', 0)}`",
+            f"- Evidence Count: `{session.get('evidence_count', 0)}`",
+            f"- Avg Source Credibility: `{session.get('avg_source_credibility', 0)}`",
+            f"",
+            "## Identity Summary",
+            person.get("intelligence_summary") or person.get("summary") or "No summary available.",
+            "",
+            "## Alerts",
+        ]
+        if alerts:
+            report_lines.extend([f"- [{a.get('severity','LOW')}] {a.get('message','')}" for a in alerts])
+        else:
+            report_lines.append("- No high-priority alerts generated.")
+        report_lines.extend([
+            "",
+            "## Open Source Analysis",
+            f"- Misinformation Risk: `{analysis.get('misinformation_risk', 0)}`",
+            f"- Top Keywords: {', '.join([k.get('keyword','') for k in analysis.get('top_keywords', [])[:10]])}",
+            "",
+        ])
+
+        return jsonify({
+            "status": "success",
+            "session_id": session_id,
+            "report_markdown": "\n".join(report_lines),
+            "report": {
+                "session": parse_json(session),
+                "person": parse_json(person),
+                "analysis": parse_json(analysis),
+                "alerts": parse_json(alerts),
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error generating session report: {e}")
         return jsonify({"error": str(e)}), 500
 
 

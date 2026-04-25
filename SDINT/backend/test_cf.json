@@ -1,0 +1,431 @@
+{
+  "domain": "cloudflare.com",
+  "intel_items": 7,
+  "results": [
+    {
+      "confidence": 0.9,
+      "content": {
+        "body": "WHOIS Registration Information\nDomain: cloudflare.com\nRegistrar: Example Registrar, Inc.\nRegistered Date: 2015-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02-15\nRegistrant: REDACTED FOR PRIVACY",
+        "title": "WHOIS Registration: cloudflare.com",
+        "url": "https://whois.icann.org/en/lookup?name=cloudflare.com"
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "WHOIS Registration: cloudflare.com WHOIS Registration Information\nDomain: cloudflare",
+          "source": "regex",
+          "type": "domain",
+          "value": "cloudflare.com"
+        },
+        {
+          "confidence": 0.8,
+          "context": "WHOIS Registration: cloudflare.com WHOIS Registration Information\nDomain: cloudflare.com\nRegistrar: Example Registr",
+          "source": "ner",
+          "type": "organization",
+          "value": "WHOIS Registration Information"
+        },
+        {
+          "confidence": 0.85,
+          "context": "ion Information\nDomain: cloudflare.com\nRegistrar: Example Registrar, Inc.\nRegistered Date: 2015-03-10\nExpiration Date",
+          "source": "ner",
+          "type": "person",
+          "value": "Example Registrar"
+        },
+        {
+          "confidence": 0.75,
+          "context": "gistrar: Example Registrar, Inc.\nRegistered Date: 2015-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02",
+          "source": "ner",
+          "type": "date",
+          "value": "2015-03-10"
+        },
+        {
+          "confidence": 0.75,
+          "context": "Inc.\nRegistered Date: 2015-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02-15\nRegistrant: REDACTED FOR",
+          "source": "ner",
+          "type": "date",
+          "value": "2025-03-10"
+        },
+        {
+          "confidence": 0.75,
+          "context": "5-03-10\nExpiration Date: 2025-03-10\nUpdated Date: 2024-02-15\nRegistrant: REDACTED FOR PRIVACY",
+          "source": "ner",
+          "type": "date",
+          "value": "2024-02-15"
+        }
+      ],
+      "evidence_id": "evi_790d2980bd6b4094",
+      "investigation_id": null,
+      "metadata": {
+        "created_date": "2015-03-10",
+        "domain": "cloudflare.com",
+        "expiration_date": "2025-03-10",
+        "record_type": "whois",
+        "registrant_email": "admin@example.com",
+        "registrant_name": "REDACTED FOR PRIVACY",
+        "registrar": "Example Registrar, Inc.",
+        "updated_date": "2024-02-15"
+      },
+      "source_id": "whois_cloudflare.com",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "whois"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:00:40.797740+00:00",
+        "processed_at": "2026-04-23T18:00:40.797740+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS A Records:\n93.184.216.34",
+        "title": "DNS A Records: cloudflare.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 1.0,
+          "context": "DNS A Records: cloudflare.com DNS A Records:\n93.184.216.34",
+          "source": "regex",
+          "type": "ip_address",
+          "value": "93.184.216.34"
+        },
+        {
+          "confidence": 0.9,
+          "context": "DNS A Records: cloudflare.com DNS A Records:\n93.184.216.34",
+          "source": "regex",
+          "type": "domain",
+          "value": "cloudflare.com"
+        },
+        {
+          "confidence": 0.75,
+          "context": "DNS A Records: cloudflare.com DNS A Records:\n93.184.2",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS"
+        }
+      ],
+      "evidence_id": "evi_705d2c789e6e4bbf",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "cloudflare.com",
+        "record_type": "A",
+        "records": [
+          "93.184.216.34"
+        ]
+      },
+      "source_id": "dns_cloudflare.com_A",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "a"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:00:40.804639+00:00",
+        "processed_at": "2026-04-23T18:00:40.804639+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS MX Records:\n10 mail.example.com\n20 mail2.example.com",
+        "title": "DNS MX Records: cloudflare.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "DNS MX Records: cloudflare.com DNS MX Records:\n10 mail.example.com\n20 mail2.exam",
+          "source": "regex",
+          "type": "domain",
+          "value": "cloudflare.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "DNS MX Records: cloudflare.com DNS MX Records:\n10 mail.example.com\n20 mail2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "mail.example.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "dflare.com DNS MX Records:\n10 mail.example.com\n20 mail2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "mail2.example.com"
+        },
+        {
+          "confidence": 0.75,
+          "context": "DNS MX Records: cloudflare.com DNS MX Records:\n10 mai",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS"
+        }
+      ],
+      "evidence_id": "evi_813779705cc84bf5",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "cloudflare.com",
+        "record_type": "MX",
+        "records": [
+          "10 mail.example.com",
+          "20 mail2.example.com"
+        ]
+      },
+      "source_id": "dns_cloudflare.com_MX",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "mx"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:00:40.813836+00:00",
+        "processed_at": "2026-04-23T18:00:40.813836+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS NS Records:\nns1.example.com\nns2.example.com",
+        "title": "DNS NS Records: cloudflare.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "DNS NS Records: cloudflare.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "cloudflare.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "DNS NS Records: cloudflare.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "ns1.example.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "s: cloudflare.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "regex",
+          "type": "domain",
+          "value": "ns2.example.com"
+        },
+        {
+          "confidence": 0.75,
+          "context": "DNS NS Records: cloudflare.com DNS NS Records:\nns1.ex",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS"
+        },
+        {
+          "confidence": 0.8,
+          "context": "s: cloudflare.com DNS NS Records:\nns1.example.com\nns2.example.com",
+          "source": "ner",
+          "type": "organization",
+          "value": "ns2.example.com"
+        }
+      ],
+      "evidence_id": "evi_49e9d4cd9fce4283",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "cloudflare.com",
+        "record_type": "NS",
+        "records": [
+          "ns1.example.com",
+          "ns2.example.com"
+        ]
+      },
+      "source_id": "dns_cloudflare.com_NS",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "ns"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:00:40.822667+00:00",
+        "processed_at": "2026-04-23T18:00:40.822667+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.95,
+      "content": {
+        "body": "DNS TXT Records:\nv=spf1 include:example.com ~all\ngoogle-site-verification=abc123...",
+        "title": "DNS TXT Records: cloudflare.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "DNS TXT Records: cloudflare.com DNS TXT Records:\nv=spf1 include:example.com ~all",
+          "source": "regex",
+          "type": "domain",
+          "value": "cloudflare.com"
+        },
+        {
+          "confidence": 0.9,
+          "context": "s: cloudflare.com DNS TXT Records:\nv=spf1 include:example.com ~all\ngoogle-site-verification=abc123...",
+          "source": "regex",
+          "type": "domain",
+          "value": "example.com"
+        },
+        {
+          "confidence": 0.8,
+          "context": "DNS TXT Records: cloudflare.com DNS TXT Records:\nv=spf1 include:e",
+          "source": "ner",
+          "type": "organization",
+          "value": "DNS TXT Records"
+        }
+      ],
+      "evidence_id": "evi_87012d9122c04ed7",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "cloudflare.com",
+        "record_type": "TXT",
+        "records": [
+          "v=spf1 include:example.com ~all",
+          "google-site-verification=abc123..."
+        ]
+      },
+      "source_id": "dns_cloudflare.com_TXT",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "dns",
+        "txt"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:00:40.835551+00:00",
+        "processed_at": "2026-04-23T18:00:40.835551+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.85,
+      "content": {
+        "body": "Found 5 subdomains:\nwww.example.com\nmail.example.com\nftp.example.com\napi.example.com\ncdn.example.com",
+        "title": "Subdomains: cloudflare.com",
+        "url": ""
+      },
+      "entities": [],
+      "evidence_id": "evi_f22f94ac70384124",
+      "investigation_id": null,
+      "metadata": {
+        "domain": "cloudflare.com",
+        "subdomain_count": 5,
+        "subdomains": [
+          "www.example.com",
+          "mail.example.com",
+          "ftp.example.com",
+          "api.example.com",
+          "cdn.example.com"
+        ]
+      },
+      "source_id": "subdomains_cloudflare.com",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "subdomains"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:00:40.836559+00:00",
+        "processed_at": "2026-04-23T18:00:40.836559+00:00",
+        "source_created": null
+      }
+    },
+    {
+      "confidence": 0.9,
+      "content": {
+        "body": "SSL Certificate Information\nSubject: *.cloudflare.com\nIssuer: Let's Encrypt Authority X3\nValid From: 2024-01-01\nValid Until: 2025-04-01\nAlgorithm: sha256WithRSAEncryption",
+        "title": "SSL Certificate: cloudflare.com",
+        "url": ""
+      },
+      "entities": [
+        {
+          "confidence": 0.9,
+          "context": "SSL Certificate: cloudflare.com SSL Certificate Information\nSubject: *.cloudflare",
+          "source": "regex",
+          "type": "domain",
+          "value": "cloudflare.com"
+        },
+        {
+          "confidence": 0.8,
+          "context": "SSL Certificate: cloudflare.com SSL Certificate Information\nSubje",
+          "source": "ner",
+          "type": "organization",
+          "value": "SSL Certificate"
+        },
+        {
+          "confidence": 0.75,
+          "context": "om\nIssuer: Let's Encrypt Authority X3\nValid From: 2024-01-01\nValid Until: 2025-04-01\nAlgorithm: sha256WithRSAE",
+          "source": "ner",
+          "type": "date",
+          "value": "2024-01-01"
+        },
+        {
+          "confidence": 0.75,
+          "context": "Authority X3\nValid From: 2024-01-01\nValid Until: 2025-04-01\nAlgorithm: sha256WithRSAEncryption",
+          "source": "ner",
+          "type": "date",
+          "value": "2025-04-01"
+        }
+      ],
+      "evidence_id": "evi_847dd5094bac4e71",
+      "investigation_id": null,
+      "metadata": {
+        "algorithm": "sha256WithRSAEncryption",
+        "domain": "cloudflare.com",
+        "issuer": "Let's Encrypt Authority X3",
+        "record_type": "ssl",
+        "subject": "*.cloudflare.com",
+        "valid_from": "2024-01-01",
+        "valid_until": "2025-04-01"
+      },
+      "source_id": "ssl_cloudflare.com",
+      "source_platform": "domain_tools",
+      "source_type": "domain_intel",
+      "status": "processed",
+      "tags": [
+        "domain_intel",
+        "domain_tools",
+        "ssl",
+        "certificate"
+      ],
+      "timestamps": {
+        "collected_at": "2026-04-23T18:00:40.853234+00:00",
+        "processed_at": "2026-04-23T18:00:40.853234+00:00",
+        "source_created": null
+      }
+    }
+  ],
+  "status": "success",
+  "stored_count": 0
+}
+

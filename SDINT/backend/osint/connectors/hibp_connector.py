@@ -1,112 +1,170 @@
 """
-HIBP Connector — Have I Been Pwned breach data lookup.
+HIBP Connector — Breach data lookup using FREE sources only.
 
-Queries breach databases for compromised accounts, passwords, domains.
-Returns breach information with dates and compromise details.
+Replaces paid HIBP API with:
+  1. HIBP k-anonymity password check (SHA1 prefix, always free, no key)
+  2. psbdmp.ws paste search (free, no key)
+  3. LeakCheck.io public endpoint (free, no key)
+All sources return real data — no mock fallback needed.
 """
 
 import logging
 import hashlib
-import base64
+import time
+import requests
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
-from osint.connectors.base_connector import BaseConnector, ConnectorError
+from osint.connectors.base_connector import BaseConnector
 from osint.services.evidence_builder import EvidenceBuilder
 from osint.schemas.evidence_schema import EvidenceItem
 
 
 class HIBPConnector(BaseConnector):
     """
-    Query Have I Been Pwned for breach data.
-    
-    Features:
-      - Email breach lookup
-      - Domain breach lookup
-      - Password hash checking
-      - Breach details (date, count, description)
-      - Rate-limited API access
+    Free breach checking using multiple public sources.
+    No API key required for any source.
     """
 
-    def __init__(self, api_key: Optional[str] = None, rate_limit_delay: float = 1.5, **kwargs):
-        """
-        Initialize HIBP connector.
-        
-        Args:
-            api_key: Optional HIBP API key for higher rate limits
-            rate_limit_delay: Seconds between requests (HIBP enforces rate limiting)
-        """
+    def __init__(self, rate_limit_delay: float = 1.5, **kwargs):
         super().__init__(
             source_type="breach_data",
             source_platform="hibp",
             rate_limit_delay=rate_limit_delay,
             **kwargs
         )
-        self.api_key = api_key
         self.logger = logging.getLogger("HIBPConnector")
-        self._hibp_available = self._check_hibp_available()
-
-    def _check_hibp_available(self) -> bool:
-        """Check if requests library available."""
-        try:
-            import requests
-            return True
-        except ImportError:
-            self.logger.warning("requests not installed, will use mock data")
-            return False
+        self.session = requests.Session()
+        self.session.headers.update({
+            "User-Agent": "OSINT-Research-Tool/1.0 (educational)",
+            "Accept": "application/json",
+        })
 
     def _validate_query(self, query: str) -> None:
-        """Validate email or domain."""
         if not query or not isinstance(query, str):
             raise ValueError("Query must be non-empty string")
+        if len(query) > 200:
+            raise ValueError("Query too long (max 200 chars)")
 
-        # Check if email or domain
-        if '@' in query:
-            # Email validation
-            if len(query) > 254:
-                raise ValueError("Email too long")
-        else:
-            # Domain validation
-            if len(query) > 253:
-                raise ValueError("Domain too long")
-            if not ('.' in query or query == 'localhost'):
-                raise ValueError("Invalid domain format")
+    def _execute_query(self, query: str, limit: int = 20, **kwargs) -> Dict[str, Any]:
+        """
+        Run breach checks across all free sources.
+        Returns aggregated results dict.
+        """
+        query = query.strip()
+        all_findings = []
 
-    def _execute_query(self, query: str, limit: int = 100, **kwargs) -> Dict[str, Any]:
+        # 1. HIBP k-anonymity password range check (always free, no key)
+        pwd_findings = self._check_hibp_password_range(query)
+        all_findings.extend(pwd_findings)
+
+        # 2. Pastebin dump search via psbdmp.ws
+        paste_findings = self._check_psbdmp(query)
+        all_findings.extend(paste_findings)
+
+        # 3. LeakCheck.io public API
+        leak_findings = self._check_leakcheck(query)
+        all_findings.extend(leak_findings)
+
+        self.logger.info(f"Breach check for '{query}': {len(all_findings)} findings")
+
+        return {
+            "query": query,
+            "total_findings": len(all_findings),
+            "findings": all_findings,
+        }
+
+    def _check_hibp_password_range(self, email: str) -> List[dict]:
         """
-        Execute HIBP breach lookup.
-        
-        Returns:
-            {
-                'query': str (email or domain),
-                'found': bool,
-                'breaches': [
-                    {
-                        'name': str,
-                        'title': str,
-                        'date': str (YYYY-MM-DD),
-                        'compromised_count': int,
-                        'compromised_data': [str],  # emails, passwords, etc.
-                        'description': str,
-                        'is_verified': bool
-                    },
-                    ...
-                ]
-            }
+        HIBP k-anonymity: hash the email, send first 5 chars of SHA1.
+        Checks if the email string appears in leaked password databases.
+        This endpoint is ALWAYS FREE — no API key needed.
         """
-        if not self._hibp_available:
-            return self._mock_hibp_lookup(query)
+        sha1 = hashlib.sha1(email.encode("utf-8")).hexdigest().upper()
+        prefix = sha1[:5]
+        suffix = sha1[5:]
 
         try:
-            # Use mock for safety - actual HIBP integration requires:
-            # 1. User agent header
-            # 2. Rate limiting compliance
-            # 3. API key management
-            return self._mock_hibp_lookup(query)
-
+            resp = self.session.get(
+                f"https://api.pwnedpasswords.com/range/{prefix}",
+                headers={"User-Agent": "OSINT-Research-Tool/1.0"},
+                timeout=10
+            )
+            if resp.status_code == 200:
+                for line in resp.text.strip().split("\n"):
+                    parts = line.strip().split(":")
+                    if len(parts) == 2 and parts[0].upper() == suffix:
+                        count = int(parts[1])
+                        return [{
+                            "source": "hibp_password_range",
+                            "source_url": "https://haveibeenpwned.com",
+                            "title": f"Breach exposure: {email}",
+                            "body": f"The string '{email}' appears {count} time(s) in leaked password databases. "
+                                    f"This indicates the email has been used as a password or appears in credential dumps.",
+                            "severity": "HIGH" if count > 100 else "MEDIUM",
+                            "occurrence_count": count,
+                            "confidence": 0.90,
+                        }]
         except Exception as e:
-            self.logger.warning(f"HIBP lookup failed: {e}")
-            return self._mock_hibp_lookup(query)
+            self.logger.debug(f"HIBP range check error: {e}")
+        return []
+
+    def _check_psbdmp(self, query: str) -> List[dict]:
+        """Search Pastebin dumps via psbdmp.ws — free, no key."""
+        results = []
+        try:
+            time.sleep(1)  # rate limit respect
+            resp = self.session.get(
+                f"https://psbdmp.ws/api/v3/search/{requests.utils.quote(query)}",
+                timeout=15
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                pastes = data if isinstance(data, list) else data.get("data", [])
+                for paste in (pastes or [])[:5]:
+                    paste_id = paste.get("id", "") if isinstance(paste, dict) else str(paste)
+                    results.append({
+                        "source": "psbdmp",
+                        "source_url": f"https://pastebin.com/{paste_id}",
+                        "title": f"Paste dump match: {query}",
+                        "body": f"Query '{query}' found in paste {paste_id}. "
+                                f"Preview: {paste.get('text', '')[:300] if isinstance(paste, dict) else ''}",
+                        "severity": "HIGH",
+                        "paste_id": paste_id,
+                        "confidence": 0.75,
+                    })
+        except Exception as e:
+            self.logger.debug(f"psbdmp error: {e}")
+        return results
+
+    def _check_leakcheck(self, email: str) -> List[dict]:
+        """LeakCheck.io free public endpoint — no key, limited results."""
+        results = []
+        try:
+            time.sleep(1)
+            resp = self.session.get(
+                f"https://leakcheck.io/api/public?check={requests.utils.quote(email)}",
+                timeout=15
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("found", 0) > 0:
+                    sources = data.get("sources", [])
+                    source_names = [s.get("name", "unknown") for s in sources] if sources else ["unknown"]
+                    results.append({
+                        "source": "leakcheck",
+                        "source_url": "https://leakcheck.io",
+                        "title": f"Leak detected: {email}",
+                        "body": f"Email '{email}' found in {data.get('found')} breach(es). "
+                                f"Sources: {', '.join(source_names)}.",
+                        "severity": "HIGH" if data.get("found", 0) > 3 else "MEDIUM",
+                        "breach_count": data.get("found"),
+                        "breach_sources": source_names,
+                        "confidence": 0.85,
+                    })
+        except Exception as e:
+            self.logger.debug(f"LeakCheck error: {e}")
+        return results
 
     def _normalize_results(
         self,
@@ -115,158 +173,46 @@ class HIBPConnector(BaseConnector):
         investigation_id: Optional[str] = None,
         tags: Optional[List[str]] = None
     ) -> List[EvidenceItem]:
-        """
-        Normalize HIBP results to EvidenceItem.
-        
-        Each breach = one evidence item.
-        """
+        """Convert breach findings to EvidenceItem list."""
         evidence_items = []
+        findings = raw_results.get("findings", [])
 
-        if not raw_results.get('found', False):
-            self.logger.info(f"No breaches found for {query}")
-            return evidence_items
-
-        breaches = raw_results.get('breaches', [])
-
-        for breach in breaches:
+        for i, finding in enumerate(findings):
             try:
-                # Extract breach info
-                breach_name = breach.get('name', 'Unknown')
-                breach_title = breach.get('title', '')
-                breach_date = breach.get('date', '')
-                compromised_count = breach.get('compromised_count', 0)
-                compromised_data = breach.get('compromised_data', [])
-                description = breach.get('description', '')
-                is_verified = breach.get('is_verified', False)
-
-                # Build body
-                body_parts = [
-                    f"Email/Domain: {query}",
-                    f"Breach: {breach_title}",
-                    f"Date: {breach_date}",
-                    f"Compromised: {compromised_count} records",
-                    f"Data Types: {', '.join(compromised_data)}",
-                    f"Verified: {is_verified}",
-                    f"\nDescription: {description}"
-                ]
-
-                # Create evidence item
                 item = EvidenceBuilder.from_raw(
                     source_type="breach_data",
-                    source_id=f"hibp_{query}_{breach_name}",
-                    source_platform="hibp",
-                    title=f"{query} in {breach_name} breach",
-                    body='\n'.join(body_parts),
-                    url="https://haveibeenpwned.com",
+                    source_id=f"breach_{finding['source']}_{hashlib.md5(f'{query}_{i}'.encode()).hexdigest()[:12]}",
+                    source_platform=finding.get("source", "hibp"),
+                    title=finding.get("title", f"Breach finding for {query}"),
+                    body=finding.get("body", ""),
+                    url=finding.get("source_url", ""),
                     metadata={
                         "query": query,
-                        "breach_name": breach_name,
-                        "breach_date": breach_date,
-                        "compromised_count": compromised_count,
-                        "data_types": compromised_data,
-                        "is_verified": is_verified
+                        "breach_source": finding.get("source"),
+                        "severity": finding.get("severity", "MEDIUM"),
+                        "occurrence_count": finding.get("occurrence_count"),
+                        "breach_count": finding.get("breach_count"),
+                        "breach_sources": finding.get("breach_sources"),
+                        "paste_id": finding.get("paste_id"),
                     },
-                    confidence=0.95 if is_verified else 0.85,
-                    tags=(tags or []) + ["breach", "verified" if is_verified else "unverified"],
+                    confidence=finding.get("confidence", 0.70),
+                    tags=(tags or []) + ["breach", finding.get("source", "")],
                     investigation_id=investigation_id,
-                    extract_entities=False  # Data already structured
+                    extract_entities=True
                 )
                 evidence_items.append(item)
-
             except Exception as e:
-                self.logger.warning(f"Failed to normalize breach {breach_name}: {e}")
-                continue
+                self.logger.warning(f"Failed to normalize finding: {e}")
 
         return evidence_items
 
-    def _mock_hibp_lookup(self, query: str) -> Dict[str, Any]:
-        """
-        Generate mock HIBP results for testing.
-        
-        Used when HIBP API not available.
-        """
-        # Simulate finding breaches for test emails
-        test_breaches = []
-
-        if '@' in query or 'example' in query.lower():
-            test_breaches = [
-                {
-                    'name': 'BreachCompilation2019',
-                    'title': 'Breach Compilation 2019',
-                    'date': '2019-01-01',
-                    'compromised_count': 42000000,
-                    'compromised_data': ['Email addresses', 'Passwords'],
-                    'description': 'A massive aggregation of breaches from various sources.',
-                    'is_verified': True
-                },
-                {
-                    'name': 'LinkedIn2012',
-                    'title': 'LinkedIn',
-                    'date': '2012-06-06',
-                    'compromised_count': 6500000,
-                    'compromised_data': ['Email addresses', 'Passwords', 'Names'],
-                    'description': 'In June 2012, LinkedIn suffered a data breach...',
-                    'is_verified': True
-                }
-            ]
-
-        return {
-            'query': query,
-            'found': len(test_breaches) > 0,
-            'breaches': test_breaches
-        }
-
-    def check_password(self, password: str) -> Dict[str, Any]:
-        """
-        Check if password has been compromised (k-anonymity check).
-        
-        Uses HIBP's "Pwned Passwords" service with privacy-preserving hash prefix.
-        
-        Args:
-            password: Password to check
-            
-        Returns:
-            {
-                'compromised': bool,
-                'times_seen': int,  # How many times this password in breaches
-                'description': str
-            }
-        """
-        try:
-            # SHA-1 hash the password
-            sha1_hash = hashlib.sha1(password.encode()).hexdigest().upper()
-            prefix = sha1_hash[:5]
-            suffix = sha1_hash[5:]
-
-            # In real implementation, query HIBP API with prefix
-            # For now, use mock
-            return self._mock_password_check(password)
-
-        except Exception as e:
-            self.logger.warning(f"Password check failed: {e}")
-            return {
-                'compromised': False,
-                'times_seen': 0,
-                'description': 'Unable to check - using safe default'
-            }
-
-    def _mock_password_check(self, password: str) -> Dict[str, Any]:
-        """Generate mock password check results."""
-        # Mock: common passwords are compromised
-        common_passwords = ['password', '123456', 'admin', 'qwerty', 'letmein']
-        compromised = any(common in password.lower() for common in common_passwords)
-
-        return {
-            'compromised': compromised,
-            'times_seen': 3245612 if compromised else 0,
-            'description': f"Password has been seen {3245612 if compromised else 0} times in known breaches"
-        }
-
     def _health_check_query(self) -> bool:
-        """Health check: can we access HIBP?"""
+        """Health check: can we reach the HIBP password range API?"""
         try:
-            # Try looking up a test email
-            results = self._execute_query("test@example.com")
-            return results is not None
+            resp = self.session.get(
+                "https://api.pwnedpasswords.com/range/00000",
+                timeout=5
+            )
+            return resp.status_code == 200
         except Exception:
             return False

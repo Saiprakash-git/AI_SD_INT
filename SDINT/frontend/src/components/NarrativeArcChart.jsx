@@ -2,6 +2,28 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts';
 
+const NarrativeArcTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const point = payload[0].payload;
+    return (
+      <div style={{ background: 'rgba(25, 28, 41, 0.95)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', borderRadius: '8px', color: '#fff' }}>
+        <p>Comment Index: {point.comment_index}</p>
+        <p style={{ color: point.rolling_avg > 0 ? '#10b981' : '#ef4444' }}>Rolling Avg: {point.rolling_avg}</p>
+        <p style={{ color: 'var(--text-muted)' }}>Raw Score: {point.raw_score}</p>
+        {point.arc_event && <p style={{ color: '#f59e0b', fontWeight: 'bold', marginTop: '5px' }}>Event: {point.arc_event.type.replace('_', ' ')}</p>}
+      </div>
+    );
+  }
+  return null;
+};
+
+const NarrativeArcDot = ({ cx, cy, payload }) => {
+  if (payload.has_arc_event) {
+    return <circle cx={cx} cy={cy} r={4} stroke="#f59e0b" strokeWidth={2} fill="#1e1e2d" />;
+  }
+  return null;
+};
+
 const NarrativeArcChart = ({ postId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,31 +55,10 @@ const NarrativeArcChart = ({ postId }) => {
     "neutral": "#8b5cf6"
   };
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const point = payload[0].payload;
-      const event = data.arc_events.find(e => e.index === point.comment_index);
-      return (
-        <div style={{ background: 'rgba(25, 28, 41, 0.95)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', borderRadius: '8px', color: '#fff' }}>
-          <p>Comment Index: {point.comment_index}</p>
-          <p style={{ color: point.rolling_avg > 0 ? '#10b981' : '#ef4444' }}>Rolling Avg: {point.rolling_avg}</p>
-          <p style={{ color: 'var(--text-muted)' }}>Raw Score: {point.raw_score}</p>
-          {event && <p style={{ color: '#f59e0b', fontWeight: 'bold', marginTop: '5px' }}>Event: {event.type.replace('_', ' ')}</p>}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Custom line dot for events
-  const CustomDot = (props) => {
-    const { cx, cy, payload } = props;
-    const hasEvent = data.arc_events.some(e => e.index === payload.comment_index);
-    if (hasEvent) {
-      return <circle cx={cx} cy={cy} r={4} stroke="#f59e0b" strokeWidth={2} fill="#1e1e2d" />;
-    }
-    return null;
-  };
+  const timelineData = data.timeline.map((point) => {
+    const arcEvent = data.arc_events?.find(e => e.index === point.comment_index);
+    return { ...point, arc_event: arcEvent, has_arc_event: Boolean(arcEvent) };
+  });
 
   return (
     <div className="glass-panel" style={{ marginTop: '1.5rem' }}>
@@ -79,11 +80,11 @@ const NarrativeArcChart = ({ postId }) => {
       </p>
 
       <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data.timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        <LineChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <XAxis dataKey="comment_index" stroke="rgba(255,255,255,0.3)" fontSize={11} />
           <YAxis domain={[-1, 1]} stroke="rgba(255,255,255,0.3)" fontSize={11} ticks={[-1, -0.5, 0, 0.5, 1]} />
           <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<NarrativeArcTooltip />} />
           
           <Line 
             type="monotone" 
@@ -99,7 +100,7 @@ const NarrativeArcChart = ({ postId }) => {
             dataKey="rolling_avg" 
             stroke="var(--accent-primary)" 
             strokeWidth={3} 
-            dot={<CustomDot />}
+            dot={<NarrativeArcDot />}
             activeDot={{ r: 6 }}
           />
         </LineChart>
