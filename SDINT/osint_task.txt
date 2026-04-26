@@ -1,0 +1,134 @@
+now what we are missing in this OSINT Framework is 
+
+crt.sh certificate connector
+Certificate transparency logs — reveals subdomains, org emails from TLS certs. Free, no key. High value for domain pivots.
+Get implementation ↗
+Missing
+High priority
+Wayback Machine CDX connector
+Historical snapshots of any URL. Reveals deleted profiles, old bios, prior email addresses. Free CDX API.
+Get implementation ↗
+Missing
+High priority
+Paste / leak search connector
+psbdmp.ws full integration + GhostBin + JustPaste. Surface credential dumps and doxxing pastes.
+Get implementation ↗
+Missing
+High priority
+Reddit connector
+You have Reddit data from social analysis — not yet wired as an OSINT pivot connector. Username → posts + comments.
+Get implementation ↗
+Missing
+High priority
+LinkedIn scrape connector
+Public LinkedIn via proxied search results (no API). Name + location → employer history, current role.
+Get implementation ↗
+Missing
+Medium
+Mastodon / Fediverse connector
+Mastodon has open APIs — username search across major instances. Real data, no key.
+Get implementation ↗
+Missing
+Medium
+Telegram public channel connector
+t.me public channel and username lookups. No API key for public pages.
+Get implementation ↗
+Missing
+Medium
+Google Dork auto-generator
+Current web search uses plain queries. Should auto-generate 10+ dork variants per pivot: site:, filetype:, intext:, inurl:.
+Get implementation ↗
+Missing
+High priority
+Partial / needs work
+Breach check connector
+psbdmp + LeakCheck free tier. Missing: no EXIF extraction on paste links, no auto-re-check on new sessions.
+
+
+
+What to build next — in strict order
+
+Fix immediately (breaks current value)
+The biggest gap right now is that your frontend graph tab and timeline tab have no rendering components. You have the data — the backend builds timeline, network_graph, and platform_summary — but the React side doesn't visualise them. This means your best output is invisible. Build the vis-network graph component and the Recharts scatter timeline first, because everything you've already built starts showing results the moment these land.
+High priority connectors you're missing
+Three connectors will dramatically improve result quality with zero cost. The crt.sh connector is the most impactful — it reveals subdomains, associated emails, and org history from TLS certificates for any domain pivot, completely free. The Wayback Machine CDX connector surfaces deleted profiles and historical data. The Google Dork auto-generator multiplies the value of your existing web search connector by generating 10+ targeted query variants instead of one plain search.
+Your Reddit data is also sitting unused as OSINT pivot data. You already have it ingested — writing a connector that searches your existing MongoDB posts/comments by author field takes under 50 lines and immediately gives you rich social thread history.
+Identity resolution gaps
+The two missing pieces here are the name-to-username variant generator and the email-to-username pivot. Without these, a query of "Arjun Sharma" only searches the literal string — it never tries arjun.sharma, arjuns, arjunsh on platforms. These two additions multiply your username enumeration coverage by 5–8x for name and email inputs.
+Image pipeline — all missing
+The entire image module is unbuilt. The Flask upload endpoint, InsightFace wiring, EXIF extractor, SauceNAO connector, and React upload UI are all zero. Since this is your biggest differentiator (no standard OSINT tool does this as a first-class query mode), treat it as one sprint — build all five pieces together because they're tightly coupled.
+PDF export and watchlist
+PDF is a one-afternoon job — your template from the previous prompt is ready, WeasyPrint is installable, you just need the Flask endpoint wired. Do this before any demos. The watchlist system uses APScheduler which you already have — it's essentially just scheduling run_full_investigation for saved session queries and diffing new evidence against stored evidence.
+New additions worth prioritising
+Phone number intelligence (free numverify tier) and the email header parser are both high-signal, low-effort additions. The Shodan free tier (100 queries/month) adds significant power for domain and IP pivots. The LLM-powered narrative synthesis — one Claude API call reading all evidence — turns your template summary into something that reads like a real analyst wrote it, which is the difference between a prototype and a product.
+What to skip for now
+Neo4j migration, writing style fingerprinting, crypto address tracing, and content similarity clustering are all later priority. Your MongoDB-based graph data is sufficient for MVP. Add Neo4j only when you're doing cross-session queries at scale.
+
+Fastest path to a complete, demoable system
+In order: vis-network graph component → Recharts timeline → image upload + InsightFace + EXIF + SauceNAO → PDF export → crt.sh connector → Wayback connector → name variant generator → email pivot expander → Reddit connector → LLM narrative synthesis. That's roughly 10 focused implementation sessions and this system will go from shhh to boommm
+So some more additions from my side is:
+add total 4 inputs - image, DOB, location (state or , country), bio/any specifc info 
+if they provide any of the inputs then only consider them in searches or else not 
+
+and find any news articles with any possible name given , in last n years( n - since DOB) , 
+fetch any posts related to that profiles in insta , x , telegram channel or any social posts and also consider them to analyse their profile , 
+and also if image data is given , try to find images from web and the profiles searched and try to match with any faces recognised in the image , and also store the mapping of image and username or name in our Databases which can be useful in further, and also search for image data in our own database also as we are storing them and lastly for any url or external link placed there in entire osint results
+keep an external link 
+So implement these features to make this project an complete OSINT bomb 
+
+
+result: 
+Implemented the first Crawl Mode upgrade pass.
+
+What’s now added:
+
+Optional Crawl Mode inputs:
+DOB
+location
+bio / specific info
+image reference URL/text
+Backend now stores those as session context and only uses them when provided.
+New OSINT connectors:
+crt.sh certificate transparency connector
+Wayback Machine CDX connector
+Google-dork style query generator
+local Reddit connector using your existing MongoDB posts/comments
+GDELT public news connector for articles related to the target/context
+New artifact handling:
+extracts external links from all OSINT evidence
+stores them in narrative_artifacts.external_links
+Frontend Crawl Mode now has:
+optional context input row
+Network tab using backend network_graph
+Links tab for all external URLs found in OSINT results
+Important boundary: I did not implement face-to-identity matching from images. That would identify real people from images, so I kept image support to a safe image_reference field for future metadata/hash/reverse-search workflows.
+
+Verified:
+
+Frontend npm.cmd run lint passes.
+Frontend npm.cmd run build passes.
+Backend modified Python files compile with the bundled Python runtime.
+Files added include:
+
+crtsh_connector.py
+wayback_connector.py
+google_dork_connector.py
+reddit_local_connector.py
+news_connector.py
+9 files changed
++769
+-68
+Undo
+backend/osint/connectors/crtsh_connector.py
+backend/osint/connectors/google_dork_connector.py
+backend/osint/connectors/reddit_local_connector.py
+backend/osint/connectors/wayback_connector.py
+backend/osint/services/investigation_orchestrator.py
+backend/osint/services/source_credibility.py
+backend/app.py
+frontend/src/components/InvestigationMode.jsx
+backend/osint/connectors/news_connector.py
+
+
+
+

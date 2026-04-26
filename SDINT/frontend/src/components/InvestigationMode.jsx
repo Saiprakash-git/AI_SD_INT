@@ -28,11 +28,14 @@ const getProfileUrl = (value) => {
 
 export default function InvestigationMode() {
   const [query, setQuery] = useState('');
+  const [context, setContext] = useState({ dob: '', location: '', bio: '', image_reference: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [person, setPerson] = useState(null);
   const [timeline, setTimeline] = useState([]);
   const [platformSummary, setPlatformSummary] = useState([]);
+  const [networkGraph, setNetworkGraph] = useState({ nodes: [], edges: [] });
+  const [externalLinks, setExternalLinks] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const pollingInterval = useRef(null);
   const [pollingStatus, setPollingStatus] = useState('pending');
@@ -50,13 +53,21 @@ export default function InvestigationMode() {
     setPerson(null);
     setTimeline([]);
     setPlatformSummary([]);
+    setNetworkGraph({ nodes: [], edges: [] });
+    setExternalLinks([]);
     setPollingStatus('pending');
 
     try {
       const response = await fetch(`${API_BASE}/api/osint/investigate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim() })
+        body: JSON.stringify({
+          query: query.trim(),
+          dob: context.dob.trim(),
+          location: context.location.trim(),
+          bio: context.bio.trim(),
+          image_reference: context.image_reference.trim(),
+        })
       });
 
       if (!response.ok) throw new Error(`Failed to start investigation: ${response.statusText}`);
@@ -89,6 +100,8 @@ export default function InvestigationMode() {
           setPerson(sessionData.person);
           setTimeline(sessionData.artifacts?.timeline || []);
           setPlatformSummary(sessionData.artifacts?.platform_summary || []);
+          setNetworkGraph(sessionData.artifacts?.network_graph || { nodes: [], edges: [] });
+          setExternalLinks(sessionData.artifacts?.external_links || []);
           setLoading(false);
 
           if (pollingInterval.current) {
@@ -140,6 +153,43 @@ export default function InvestigationMode() {
     );
   };
 
+  const NetworkPreview = ({ graph }) => {
+    const nodes = graph?.nodes || [];
+    const edges = graph?.edges || [];
+    if (!nodes.length) {
+      return <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No network graph data</div>;
+    }
+    const center = { x: 260, y: 180 };
+    const radius = 130;
+    const positioned = nodes.slice(0, 24).map((node, idx) => {
+      if (idx === 0) return { ...node, x: center.x, y: center.y };
+      const angle = ((idx - 1) / Math.max(nodes.length - 1, 1)) * Math.PI * 2;
+      return { ...node, x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+    });
+    const byId = Object.fromEntries(positioned.map(node => [node.id, node]));
+
+    return (
+      <div className="card" style={{ overflowX: 'auto' }}>
+        <svg width="540" height="360" role="img" aria-label="Entity network preview">
+          {edges.slice(0, 60).map((edge, idx) => {
+            const from = byId[edge.from];
+            const to = byId[edge.to];
+            if (!from || !to) return null;
+            return <line key={idx} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="rgba(0, 217, 255, 0.22)" strokeWidth="1.5" />;
+          })}
+          {positioned.map((node) => (
+            <g key={node.id}>
+              <circle cx={node.x} cy={node.y} r={node.id === 'target' ? 22 : 15} fill={node.color || 'var(--accent-secondary)'} opacity="0.9" />
+              <text x={node.x} y={node.y + 30} textAnchor="middle" fill="var(--text-main)" fontSize="10">
+                {displayValue(node.label, node.id).slice(0, 18)}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+    );
+  };
+
   // Loading state
   if (loading && !person) {
     return (
@@ -165,6 +215,12 @@ export default function InvestigationMode() {
             />
             <button type="submit" disabled style={{ padding: '0.9rem 2rem', opacity: 0.5 }}>Start</button>
           </form>
+          <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
+            <input type="date" value={context.dob} disabled style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
+            <input type="text" value={context.location} disabled placeholder="Location" style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
+            <input type="text" value={context.bio} disabled placeholder="Bio / specific info" style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
+            <input type="text" value={context.image_reference} disabled placeholder="Image URL / reference" style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
+          </div>
         </div>
 
         {/* Loading animation */}
@@ -225,6 +281,40 @@ export default function InvestigationMode() {
             {loading ? 'Investigating...' : 'Start Investigation'}
           </button>
         </form>
+        <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
+          <input
+            type="date"
+            value={context.dob}
+            onChange={(e) => setContext({ ...context, dob: e.target.value })}
+            disabled={loading}
+            title="Optional DOB context"
+            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
+          />
+          <input
+            type="text"
+            value={context.location}
+            onChange={(e) => setContext({ ...context, location: e.target.value })}
+            placeholder="Location: state/country"
+            disabled={loading}
+            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
+          />
+          <input
+            type="text"
+            value={context.bio}
+            onChange={(e) => setContext({ ...context, bio: e.target.value })}
+            placeholder="Bio / specific info"
+            disabled={loading}
+            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
+          />
+          <input
+            type="text"
+            value={context.image_reference}
+            onChange={(e) => setContext({ ...context, image_reference: e.target.value })}
+            placeholder="Image URL / reference"
+            disabled={loading}
+            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
+          />
+        </div>
       </div>
 
       {/* Error State */}
@@ -338,6 +428,8 @@ export default function InvestigationMode() {
                 { id: 'overview', label: '📋 Overview', icon: Info },
                 { id: 'timeline', label: '📅 Timeline', icon: Clock },
                 { id: 'platforms', label: '🌐 Platforms', icon: Globe },
+                { id: 'network', label: 'Network', icon: Users },
+                { id: 'links', label: 'Links', icon: Link2 },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -454,6 +546,37 @@ export default function InvestigationMode() {
                     })
                   ) : (
                     <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No platform data</div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'network' && (
+                <NetworkPreview graph={networkGraph} />
+              )}
+
+              {activeTab === 'links' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {externalLinks.length > 0 ? (
+                    externalLinks.map((link, i) => (
+                      <a
+                        key={`${link.url}-${i}`}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="card"
+                        style={{ textDecoration: 'none', borderLeft: '3px solid var(--accent-secondary)', padding: '1rem' }}
+                      >
+                        <div style={{ color: 'var(--text-bright)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                          {displayValue(link.title, 'External link')}
+                        </div>
+                        <div style={{ color: 'var(--accent-secondary)', fontSize: '0.8rem', wordBreak: 'break-all' }}>{link.url}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.35rem' }}>
+                          {displayValue(link.connector, 'source')} {link.platform ? `| ${link.platform}` : ''}
+                        </div>
+                      </a>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No external links found</div>
                   )}
                 </div>
               )}

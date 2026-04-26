@@ -18,6 +18,11 @@ class SourceCredibility:
         "nitter_twitter": 0.65,
         "instagram_public": 0.68,
         "web_search": 0.65,
+        "crtsh": 0.88,
+        "wayback_cdx": 0.76,
+        "google_dork": 0.62,
+        "reddit_local": 0.82,
+        "gdelt_news": 0.64,
     }
 
     @classmethod
@@ -60,4 +65,3 @@ class SourceCredibility:
                 continue
             validated[key] = max(0.0, min(1.0, round(v, 2)))
         return validated
-

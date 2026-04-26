@@ -819,6 +819,13 @@ def start_investigation():
     try:
         data = request.get_json() or {}
         query = data.get('query', '').strip()
+        context = {
+            "dob": (data.get("dob") or "").strip(),
+            "location": (data.get("location") or "").strip(),
+            "bio": (data.get("bio") or "").strip(),
+            "image_reference": (data.get("image_reference") or "").strip(),
+        }
+        context = {k: v for k, v in context.items() if v}
         
         if not query:
             return jsonify({"error": "query required"}), 400
@@ -839,6 +846,7 @@ def start_investigation():
             "pivot_type": pivot["type"],
             "status": "queued",
             "credibility_weights": custom_weights,
+            "context": context,
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
         
@@ -848,6 +856,7 @@ def start_investigation():
             session_id,
             query,
             db,
+            context,
             task_name=f"investigate_{pivot['type']}_{query[:20]}"
         )
         
