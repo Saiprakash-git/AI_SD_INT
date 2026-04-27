@@ -77,8 +77,8 @@ async def enumerate_username(username: str) -> list:
     return results
 
 
-def generate_username_variants(name: str = None, email: str = None, hint: str = None) -> list:
-    """Generate likely usernames from name, email, or hint."""
+def generate_username_variants(name: str = None, email: str = None, hint: str = None, context: dict = None) -> list:
+    """Generate likely usernames from name, email, hint, and context."""
     variants = set()
     
     if hint:
@@ -95,16 +95,42 @@ def generate_username_variants(name: str = None, email: str = None, hint: str = 
         parts = name.lower().strip().split()
         if len(parts) >= 2:
             first, last = parts[0], parts[-1]
-            variants.update([
+            base_variants = [
                 f"{first}{last}",
                 f"{first}.{last}",
                 f"{first}_{last}",
                 f"{first[0]}{last}",
+                f"{first}{last[0]}",
                 first,
                 last,
-            ])
-    
-    return list(variants)[:10]
+            ]
+            variants.update(base_variants)
+            
+            # Incorporate context
+            if context:
+                dob = context.get('dob', '')
+                loc = context.get('location', '')
+                
+                years = []
+                if dob:
+                    # Extract year if possible
+                    import re
+                    year_match = re.search(r'\b(19|20)\d{2}\b', dob)
+                    if year_match:
+                        years.append(year_match.group(0))
+                        years.append(year_match.group(0)[-2:]) # last 2 digits
+                
+                loc_short = loc[:2].lower() if loc else ""
+                
+                for bv in base_variants:
+                    for y in years:
+                        variants.add(f"{bv}{y}")
+                        variants.add(f"{bv}_{y}")
+                    if loc_short:
+                        variants.add(f"{bv}{loc_short}")
+                        variants.add(f"{bv}_{loc_short}")
+
+    return list(variants)[:30]
 
 
 class UsernameConnector:
@@ -121,15 +147,20 @@ class UsernameConnector:
         pivot_value = pivot.get("value", "")
         session_id = pivot.get("session_id", "")
         
+        context = pivot.get("context", {})
+        
         # Generate usernames to check
         if pivot_type == "username":
             usernames = [pivot_value.lstrip("@")]
+            usernames.extend(generate_username_variants(hint=pivot_value, context=context))
         elif pivot_type == "name":
-            usernames = generate_username_variants(name=pivot_value)
+            usernames = generate_username_variants(name=pivot_value, context=context)
         elif pivot_type == "email":
-            usernames = generate_username_variants(email=pivot_value)
+            usernames = generate_username_variants(email=pivot_value, context=context)
         else:
             return []
+            
+        usernames = list(set(usernames)) # Deduplicate
         
         all_evidence = []
         

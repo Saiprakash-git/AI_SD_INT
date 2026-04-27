@@ -808,9 +808,46 @@ def get_stats():
 # NEW OSINT Investigation Framework - IDENTITY DISCOVERY FOCUS
 # ============================================================================
 
+import os
+from werkzeug.utils import secure_filename
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 # Initialize task queue
 task_queue = TaskQueue.get_instance()
 task_queue.set_db(db)
+
+@app.route('/api/osint/upload', methods=['POST'])
+def upload_image():
+    """Upload an image for analysis and reverse search."""
+    try:
+        if 'image' not in request.files:
+            return jsonify({"error": "No image part"}), 400
+            
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+            
+        if file:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, f"{uuid.uuid4().hex[:8]}_{filename}")
+            file.save(filepath)
+            
+            # Analyze image (EXIF & Faces) right away to return initial metadata
+            from osint.services.image_analyzer import ImageAnalyzer
+            analyzer = ImageAnalyzer()
+            analysis = analyzer.analyze(filepath)
+            
+            return jsonify({
+                "status": "success", 
+                "url": filepath,
+                "analysis": analysis
+            }), 200
+            
+    except Exception as e:
+        logger.error(f"Error uploading image: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/osint/investigate', methods=['POST'])
@@ -818,17 +855,61 @@ def start_investigation():
     """Start a new OSINT investigation on a target."""
     try:
         data = request.get_json() or {}
-        query = data.get('query', '').strip()
-        context = {
-            "dob": (data.get("dob") or "").strip(),
-            "location": (data.get("location") or "").strip(),
-            "bio": (data.get("bio") or "").strip(),
-            "image_reference": (data.get("image_reference") or "").strip(),
-        }
-        context = {k: v for k, v in context.items() if v}
+        raw_prompt = data.get('query', '').strip()
         
-        if not query:
+        if not raw_prompt:
             return jsonify({"error": "query required"}), 400
+            
+        # Parse prompt to extract context
+        extractor = EntityExtractor()
+        entities = extractor.extract(raw_prompt)
+        
+        context = {
+            "dob": "",
+            "location": "",
+            "bio": raw_prompt,
+            "image_reference": "",
+        }
+        
+        target = ""
+        # Find primary target
+        for ent in entities:
+            if ent["type"] in ["email", "username", "domain", "phone"]:
+                target = ent["value"]
+                break
+        if not target:
+            for ent in entities:
+                if ent["type"] == "person":
+                    target = ent["value"]
+                    break
+        if not target:
+            if len(raw_prompt.split()) > 2 and data.get("image_path"):
+                target = "image_search"
+            else:
+                words = raw_prompt.split()
+                stopwords = {"find", "trace", "search", "look", "investigate", "the", "this", "image", "digital", "footprint", "of", "about", "for", "details", "person", "guy", "girl"}
+                target_words = [w for w in words if w.lower() not in stopwords]
+                target = target_words[0] if target_words else ("image_search" if data.get("image_path") else raw_prompt)
+            
+        for ent in entities:
+            if ent["type"] == "date" and not context["dob"]:
+                context["dob"] = ent["value"]
+            if ent["type"] == "location" and not context["location"]:
+                context["location"] = ent["value"]
+            if ent["type"] == "url" and not context["image_reference"]:
+                if any(ext in ent["value"].lower() for ext in [".jpg", ".png", ".jpeg", ".gif", "imgur.com", "imgbb.com"]):
+                    context["image_reference"] = ent["value"]
+                    
+        # Also allow explicit context override from UI if they send it
+        if data.get("dob"): context["dob"] = data["dob"]
+        if data.get("location"): context["location"] = data["location"]
+        if data.get("bio"): context["bio"] = data["bio"]
+        if data.get("image_reference"): context["image_reference"] = data["image_reference"]
+        if data.get("image_path"): context["image_path"] = data["image_path"]
+        if data.get("image_analysis"): context["image_analysis"] = data["image_analysis"]
+        
+        context = {k: v for k, v in context.items() if v}
+        query = target if target else raw_prompt
         
         # Create investigation session
         session_id = str(__import__('uuid').uuid4())

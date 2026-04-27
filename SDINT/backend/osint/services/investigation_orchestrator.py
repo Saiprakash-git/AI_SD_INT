@@ -19,6 +19,8 @@ from osint.connectors.wayback_connector import WaybackConnector
 from osint.connectors.google_dork_connector import GoogleDorkConnector
 from osint.connectors.reddit_local_connector import RedditLocalConnector
 from osint.connectors.news_connector import NewsConnector
+from osint.connectors.image_connector import ImageConnector
+from osint.connectors.saucenao_connector import SauceNaoConnector
 from osint.services.identity_resolver import IdentityResolver
 from osint.services.narrative_builder import NarrativeBuilder
 from osint.services.rate_scheduler import RateScheduler
@@ -97,6 +99,10 @@ def parse_pivot(raw_query: str) -> dict:
     """Classify query into structured pivot type."""
     q = raw_query.strip()
     
+    # Image Search fallback
+    if q == "image_search":
+        return {"type": "image", "value": "Image Search"}
+        
     # Email
     if re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', q):
         return {"type": "email", "value": q}
@@ -191,6 +197,11 @@ def run_full_investigation(session_id: str, raw_query: str, db, context: dict = 
         connectors.append(GoogleDorkConnector())
         connectors.append(RedditLocalConnector())
         connectors.append(NewsConnector())
+        
+        if context and context.get("image_reference"):
+            connectors.append(ImageConnector())
+        if context and context.get("image_path"):
+            connectors.append(SauceNaoConnector())
         
         # If we have existing web search or domain connectors, add them
         # connectors.append(WebSearchConnector())

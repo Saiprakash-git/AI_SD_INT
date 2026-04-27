@@ -28,7 +28,7 @@ const getProfileUrl = (value) => {
 
 export default function InvestigationMode() {
   const [query, setQuery] = useState('');
-  const [context, setContext] = useState({ dob: '', location: '', bio: '', image_reference: '' });
+  const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [person, setPerson] = useState(null);
@@ -58,15 +58,33 @@ export default function InvestigationMode() {
     setPollingStatus('pending');
 
     try {
+      let imagePath = '';
+      let analysis = null;
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('image', selectedImage);
+        try {
+          const uploadRes = await fetch(`${API_BASE}/api/osint/upload`, {
+            method: 'POST',
+            body: formData
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData.url) {
+            imagePath = uploadData.url;
+            analysis = uploadData.analysis;
+          }
+        } catch (err) {
+          console.error("Image upload failed", err);
+        }
+      }
+
       const response = await fetch(`${API_BASE}/api/osint/investigate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: query.trim(),
-          dob: context.dob.trim(),
-          location: context.location.trim(),
-          bio: context.bio.trim(),
-          image_reference: context.image_reference.trim(),
+          image_path: imagePath,
+          image_analysis: analysis
         })
       });
 
@@ -159,29 +177,29 @@ export default function InvestigationMode() {
     if (!nodes.length) {
       return <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No network graph data</div>;
     }
-    const center = { x: 260, y: 180 };
-    const radius = 130;
-    const positioned = nodes.slice(0, 24).map((node, idx) => {
-      if (idx === 0) return { ...node, x: center.x, y: center.y };
+    const center = { x: 300, y: 220 };
+    const radius = 160;
+    const positioned = nodes.slice(0, 40).map((node, idx) => {
+      if (node.type === 'person' || idx === 0) return { ...node, x: center.x, y: center.y, r: 25, color: '#f59e0b' };
       const angle = ((idx - 1) / Math.max(nodes.length - 1, 1)) * Math.PI * 2;
-      return { ...node, x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+      return { ...node, x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius, r: 15, color: 'var(--accent-secondary)' };
     });
     const byId = Object.fromEntries(positioned.map(node => [node.id, node]));
 
     return (
-      <div className="card" style={{ overflowX: 'auto' }}>
-        <svg width="540" height="360" role="img" aria-label="Entity network preview">
-          {edges.slice(0, 60).map((edge, idx) => {
+      <div className="card" style={{ overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
+        <svg width="600" height="440" role="img" aria-label="Entity network preview">
+          {edges.slice(0, 100).map((edge, idx) => {
             const from = byId[edge.from];
             const to = byId[edge.to];
             if (!from || !to) return null;
-            return <line key={idx} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="rgba(0, 217, 255, 0.22)" strokeWidth="1.5" />;
+            return <line key={idx} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="rgba(0, 217, 255, 0.3)" strokeWidth="2" />;
           })}
           {positioned.map((node) => (
             <g key={node.id}>
-              <circle cx={node.x} cy={node.y} r={node.id === 'target' ? 22 : 15} fill={node.color || 'var(--accent-secondary)'} opacity="0.9" />
-              <text x={node.x} y={node.y + 30} textAnchor="middle" fill="var(--text-main)" fontSize="10">
-                {displayValue(node.label, node.id).slice(0, 18)}
+              <circle cx={node.x} cy={node.y} r={node.r} fill={node.color} opacity="0.95" style={{ filter: 'drop-shadow(0 0 5px rgba(0, 217, 255, 0.4))' }}/>
+              <text x={node.x} y={node.y + node.r + 15} textAnchor="middle" fill="var(--text-main)" fontSize="11" fontWeight="600">
+                {displayValue(node.label, node.id).slice(0, 20)}
               </text>
             </g>
           ))}
@@ -204,23 +222,22 @@ export default function InvestigationMode() {
             Correlating evidence across 10+ data sources...
           </p>
 
-          <form onSubmit={handleStartInvestigation} style={{ marginTop: '1.5rem', display: 'flex', gap: '10px' }}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter email, username, domain, phone, or name..."
-              disabled
-              style={{ flex: 1, padding: '0.9rem 1.2rem', fontSize: '0.95rem' }}
-            />
-            <button type="submit" disabled style={{ padding: '0.9rem 2rem', opacity: 0.5 }}>Start</button>
+          <form onSubmit={handleStartInvestigation} style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <textarea
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Provide a descriptive prompt to search (e.g., 'Find John Doe. He is from New York, born in 1990. Associated image: http://...') "
+                disabled
+                style={{ flex: 1, padding: '0.9rem 1.2rem', fontSize: '0.95rem', minHeight: '80px', borderRadius: '8px', resize: 'vertical' }}
+              />
+              <button type="submit" disabled style={{ padding: '0.9rem 2rem', opacity: 0.5, height: '80px' }}>Start</button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--panel-bg)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+              <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Optional Target Image:</label>
+              <input type="file" accept="image/*" disabled style={{ fontSize: '0.85rem' }} />
+            </div>
           </form>
-          <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
-            <input type="date" value={context.dob} disabled style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
-            <input type="text" value={context.location} disabled placeholder="Location" style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
-            <input type="text" value={context.bio} disabled placeholder="Bio / specific info" style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
-            <input type="text" value={context.image_reference} disabled placeholder="Image URL / reference" style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }} />
-          </div>
         </div>
 
         {/* Loading animation */}
@@ -268,53 +285,30 @@ export default function InvestigationMode() {
           Discover and correlate online identities across 10+ platforms
         </p>
 
-        <form onSubmit={handleStartInvestigation} style={{ marginTop: '1.5rem', display: 'flex', gap: '10px' }}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter email, username, domain, phone, or name..."
-            disabled={loading}
-            style={{ flex: 1, padding: '0.9rem 1.2rem', fontSize: '0.95rem' }}
-          />
-          <button className="btn-primary" type="submit" disabled={loading} style={{ padding: '0.9rem 2rem' }}>
-            {loading ? 'Investigating...' : 'Start Investigation'}
-          </button>
+        <form onSubmit={handleStartInvestigation} style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <textarea
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Provide a descriptive prompt to search (e.g., 'Find John Doe. He is from New York, born in 1990. Associated image: http://...') "
+              disabled={loading}
+              style={{ flex: 1, padding: '0.9rem 1.2rem', fontSize: '0.95rem', minHeight: '80px', borderRadius: '8px', resize: 'vertical' }}
+            />
+            <button className="btn-primary" type="submit" disabled={loading} style={{ padding: '0.9rem 2rem', height: '80px' }}>
+              {loading ? 'Investigating...' : 'Start Investigation'}
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--panel-bg)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+            <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Upload Target Image (for EXIF, Reverse Search & Facial matching):</label>
+            <input 
+              type="file" 
+              accept="image/*" 
+              disabled={loading}
+              onChange={(e) => setSelectedImage(e.target.files[0])}
+              style={{ fontSize: '0.85rem' }} 
+            />
+          </div>
         </form>
-        <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
-          <input
-            type="date"
-            value={context.dob}
-            onChange={(e) => setContext({ ...context, dob: e.target.value })}
-            disabled={loading}
-            title="Optional DOB context"
-            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
-          />
-          <input
-            type="text"
-            value={context.location}
-            onChange={(e) => setContext({ ...context, location: e.target.value })}
-            placeholder="Location: state/country"
-            disabled={loading}
-            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
-          />
-          <input
-            type="text"
-            value={context.bio}
-            onChange={(e) => setContext({ ...context, bio: e.target.value })}
-            placeholder="Bio / specific info"
-            disabled={loading}
-            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
-          />
-          <input
-            type="text"
-            value={context.image_reference}
-            onChange={(e) => setContext({ ...context, image_reference: e.target.value })}
-            placeholder="Image URL / reference"
-            disabled={loading}
-            style={{ padding: '0.75rem 0.9rem', fontSize: '0.85rem' }}
-          />
-        </div>
       </div>
 
       {/* Error State */}
@@ -454,26 +448,86 @@ export default function InvestigationMode() {
             {/* Tab Content */}
             <div style={{ flex: 1 }}>
               {activeTab === 'overview' && (
-                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1.5rem' }}>
                   {(person.summary || person.intelligence_summary) && (
-                    <div>
-                      <h4 style={{ margin: 0, marginBottom: '0.75rem', color: 'var(--accent-primary)' }}>Summary</h4>
+                    <div className="card" style={{ borderLeft: '4px solid var(--accent-primary)' }}>
+                      <h4 style={{ margin: 0, marginBottom: '0.75rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Info size={18} /> Executive Summary
+                      </h4>
                       <p style={{ margin: 0, lineHeight: '1.6', color: 'var(--text-main)' }}>{person.summary || person.intelligence_summary}</p>
                     </div>
                   )}
+
+                  {/* Organised Categorized Section */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                    {/* Photos */}
+                    <div className="card" style={{ borderTop: '3px solid #8b5cf6' }}>
+                      <h4 style={{ margin: 0, marginBottom: '0.75rem', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '8px' }}>📸 Photos & Media</h4>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        {externalLinks.filter(l => l.url.match(/\.(jpeg|jpg|gif|png)$/i) || l.connector === 'image_intelligence').length > 0 ? (
+                          externalLinks.filter(l => l.url.match(/\.(jpeg|jpg|gif|png)$/i) || l.connector === 'image_intelligence').map((l, i) => (
+                             <a key={i} href={l.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', width: '80px', height: '80px', borderRadius: '8px', background: `url(${l.url}) center/cover no-repeat`, border: '1px solid var(--panel-border)' }} title={l.title}></a>
+                          ))
+                        ) : <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No media found</span>}
+                      </div>
+                      
+                      {/* Reverse Search Links inside Photos tab */}
+                      {externalLinks.filter(l => l.connector === 'saucenao_reverse_search').length > 0 && (
+                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--panel-border)' }}>
+                          <h5 style={{ margin: 0, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Reverse Image Matches:</h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            {externalLinks.filter(l => l.connector === 'saucenao_reverse_search').slice(0,4).map((l, i) => (
+                              <a key={i} href={l.url} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', textDecoration: 'none' }}>
+                                🔗 {l.platform || l.title} Match
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Social Profiles */}
+                    <div className="card" style={{ borderTop: '3px solid #3b82f6' }}>
+                      <h4 style={{ margin: 0, marginBottom: '0.75rem', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '8px' }}>👥 Top Social Profiles</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {platformSummary.filter(p => ['Instagram', 'X', 'Twitter', 'Telegram', 'Reddit', 'GitHub'].includes(p.platform)).slice(0,5).length > 0 ? (
+                          platformSummary.filter(p => ['Instagram', 'X', 'Twitter', 'Telegram', 'Reddit', 'GitHub'].includes(p.platform)).slice(0,5).map((p, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: 'var(--panel-hover)', borderRadius: '6px' }}>
+                              <span style={{ fontWeight: 'bold' }}>{p.platform}</span>
+                              <a href={p.urls?.[0]} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', fontSize: '0.85rem' }}>{p.usernames?.[0] || 'View'}</a>
+                            </div>
+                          ))
+                        ) : <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No prominent social profiles discovered</span>}
+                      </div>
+                    </div>
+
+                    {/* News Articles */}
+                    <div className="card" style={{ borderTop: '3px solid #10b981' }}>
+                      <h4 style={{ margin: 0, marginBottom: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>📰 News & Articles</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                         {externalLinks.filter(l => l.connector === 'gdelt_news' || l.connector === 'news_article').length > 0 ? (
+                            externalLinks.filter(l => l.connector === 'gdelt_news' || l.connector === 'news_article').slice(0,4).map((l, i) => (
+                              <a key={i} href={l.url} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--text-main)', textDecoration: 'none', borderLeft: '2px solid #10b981', paddingLeft: '8px' }}>
+                                {displayValue(l.title).slice(0, 60)}...
+                              </a>
+                            ))
+                         ) : <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No direct news mentions found</span>}
+                      </div>
+                    </div>
+                  </div>
                   
                   {person.breach_findings && person.breach_findings.length > 0 && (
-                    <div>
+                    <div className="card" style={{ borderTop: '3px solid var(--negative)' }}>
                       <h4 style={{ margin: 0, marginBottom: '0.75rem', color: 'var(--negative)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <AlertTriangle size={16} /> Breach Exposure
+                        <AlertTriangle size={18} /> Breach Exposure ({person.breach_findings.length})
                       </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                         {person.breach_findings.map((b, i) => (
-                          <div key={i} style={{ background: 'rgba(239, 68, 68, 0.05)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.9rem' }}>
-                            <strong style={{ color: 'var(--negative)' }}>{displayValue(b.source || b.connector_name, 'Unknown source')}</strong>
-                            <p style={{ margin: '0.3rem 0 0 0', color: 'var(--text-muted)' }}>
+                          <div key={i} style={{ background: 'rgba(239, 68, 68, 0.05)', padding: '0.75rem 1rem', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.9rem', flex: '1 1 calc(50% - 0.75rem)' }}>
+                            <strong style={{ color: 'var(--negative)', display: 'block', marginBottom: '4px' }}>{displayValue(b.source || b.connector_name, 'Unknown source')}</strong>
+                            <span style={{ color: 'var(--text-muted)' }}>
                               {displayValue(b.email || b.details?.email || b.details?.breach_type, 'Exposure detected')} | {displayValue(b.date || b.timestamp, 'Date unknown')}
-                            </p>
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -508,7 +562,15 @@ export default function InvestigationMode() {
               {activeTab === 'platforms' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                   {platformSummary.length > 0 ? (
-                    platformSummary.map((plat, i) => {
+                    [...platformSummary].sort((a, b) => {
+                      const order = ['Instagram', 'X', 'Twitter', 'Telegram', 'Reddit', 'GitHub', 'HackerNews'];
+                      const indexA = order.indexOf(a.platform);
+                      const indexB = order.indexOf(b.platform);
+                      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                      if (indexA !== -1) return -1;
+                      if (indexB !== -1) return 1;
+                      return (b.evidence_count || b.count || 0) - (a.evidence_count || a.count || 0);
+                    }).map((plat, i) => {
                       const profileUrls = plat.urls || plat.profile_urls || [];
 
                       return (
@@ -523,7 +585,7 @@ export default function InvestigationMode() {
                             <div>
                               <span style={{ color: 'var(--text-muted)' }}>Users:</span>
                               <div style={{ marginTop: '0.3rem' }}>
-                                {plat.usernames.map((u, j) => {
+                                {plat.usernames.slice(0, 5).map((u, j) => {
                                   const username = displayValue(u);
                                   const confidence = getConfidence(u);
                                   return (
@@ -532,6 +594,7 @@ export default function InvestigationMode() {
                                     </code>
                                   );
                                 })}
+                                {plat.usernames.length > 5 && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>+{plat.usernames.length - 5} more variants</span>}
                               </div>
                             </div>
                           )}
