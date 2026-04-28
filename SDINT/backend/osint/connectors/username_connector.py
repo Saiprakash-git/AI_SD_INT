@@ -37,37 +37,51 @@ JSON_PLATFORMS = {
 }
 
 
-async def check_platform(session, platform: str, url: str, username: str) -> Optional[dict]:
-    """Check if username exists on a platform."""
+async def check_platform(session, platform: str, url: str, username: str, query_name: str = "") -> Optional[dict]:
+    """Check if username exists on a platform and validate content."""
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     }
     try:
         async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10), allow_redirects=True) as resp:
-            if platform in JSON_PLATFORMS:
-                if resp.status == 200:
+            if resp.status == 200:
+                try:
+                    content = await resp.text()
+                except Exception:
+                    content = ""
+                
+                # Bug 1 Fix: Validate profile content against query terms if it's a name search
+                if query_name and content:
+                    query_terms = [t for t in query_name.lower().split() if len(t) > 2]
+                    if query_terms:
+                        content_lower = content.lower()
+                        matches = sum(1 for term in query_terms if term in content_lower)
+                        if matches < 1:
+                            return None # Discard if no name component matches
+
+                if platform in JSON_PLATFORMS:
                     try:
-                        data = await resp.json(content_type=None)
+                        import json
+                        data = json.loads(content) if content else await resp.json(content_type=None)
                         if JSON_PLATFORMS[platform](data):
                             return {"platform": platform, "url": url, "found": True, "status": resp.status}
                     except Exception:
                         pass
-            else:
-                if resp.status == 200:
+                else:
                     return {"platform": platform, "url": url, "found": True, "status": resp.status}
     except (asyncio.TimeoutError, Exception):
         pass
     return None
 
 
-async def enumerate_username(username: str) -> list:
+async def enumerate_username(username: str, query_name: str = "") -> list:
     """Check username across platforms concurrently."""
     results = []
     urls = {platform: template.format(username=username) for platform, template in PLATFORMS.items()}
     
     connector = aiohttp.TCPConnector(limit=20, limit_per_host=2)
     async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [check_platform(session, platform, url, username) for platform, url in urls.items()]
+        tasks = [check_platform(session, platform, url, username, query_name) for platform, url in urls.items()]
         responses = await asyncio.gather(*tasks, return_exceptions=True)
     
     for resp in responses:
@@ -133,6 +147,26 @@ def generate_username_variants(name: str = None, email: str = None, hint: str = 
     return list(variants)[:30]
 
 
+def extract_handles_from_search(name: str) -> list:
+    """Do a quick web search to find real handles used by the target."""
+    import urllib.request
+    import urllib.parse
+    handles = set()
+    try:
+        query = urllib.parse.quote(f"{name} (twitter OR github OR username)")
+        url = f"https://html.duckduckgo.com/html/?q={query}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            html = resp.read().decode('utf-8')
+            for m in re.finditer(r'(twitter\.com/|github\.com/)([\w-]+)', html):
+                handles.add(m.group(2).lower())
+            for m in re.finditer(r'@([A-Za-z0-9_]{4,15})\b', html):
+                handles.add(m.group(1).lower())
+    except Exception:
+        pass
+    return list(handles)
+
+
 class UsernameConnector:
     """Free username enumeration across 20+ platforms."""
     
@@ -155,6 +189,10 @@ class UsernameConnector:
             usernames.extend(generate_username_variants(hint=pivot_value, context=context))
         elif pivot_type == "name":
             usernames = generate_username_variants(name=pivot_value, context=context)
+            # Bug 2 Fix: Extract real handles from a quick web search before enumeration
+            web_handles = extract_handles_from_search(pivot_value)
+            if web_handles:
+                usernames.extend(web_handles)
         elif pivot_type == "email":
             usernames = generate_username_variants(email=pivot_value, context=context)
         else:
@@ -164,11 +202,13 @@ class UsernameConnector:
         
         all_evidence = []
         
+        query_name = pivot_value if pivot_type == "name" else ""
+        
         for username in usernames:
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                results = loop.run_until_complete(enumerate_username(username))
+                results = loop.run_until_complete(enumerate_username(username, query_name))
                 loop.close()
                 
                 for result in results:

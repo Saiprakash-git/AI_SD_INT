@@ -367,8 +367,35 @@ export default function InvestigationMode() {
               <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>Match Confidence</p>
               <div style={{ marginTop: '0.75rem' }}>
                 <ConfidenceMeter confidence={person.match_confidence} />
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                  {person.match_confidence >= 0.9 ? '90%+ confidence: High corroboration, exact match across 3+ sources.' :
+                   person.match_confidence >= 0.7 ? '70–90% confidence: Consistent username and partial context match.' :
+                   person.match_confidence >= 0.5 ? '50–70% confidence: Name match only, unverified context.' :
+                   'Below 50% confidence: Possible match, low corroboration.'}
+                </p>
               </div>
             </div>
+
+            {/* Corroboration */}
+            {person.corroborations && person.corroborations.length > 0 && (
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--panel-border)' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>Corroboration Signals</p>
+                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {person.corroborations.map((reason, idx) => (
+                    <div key={idx} style={{ 
+                      fontSize: '0.85rem', 
+                      color: reason.startsWith('✓') ? '#10b981' : (reason.startsWith('⚠') ? '#f59e0b' : 'var(--text-bright)'),
+                      background: 'var(--panel-hover)',
+                      padding: '0.6rem',
+                      borderRadius: '4px',
+                      borderLeft: reason.startsWith('✓') ? '3px solid #10b981' : (reason.startsWith('⚠') ? '3px solid #f59e0b' : 'none')
+                    }}>
+                      {reason}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Evidence Count */}
             <div style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--panel-border)' }}>

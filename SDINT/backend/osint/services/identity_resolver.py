@@ -28,6 +28,7 @@ class ResolvedPerson:
     social_profiles: list = field(default_factory=list)
     breach_findings: list = field(default_factory=list)
     evidence_ids: list = field(default_factory=list)
+    corroborations: list = field(default_factory=list)
     match_confidence: float = 0.0
     risk_score: float = 0.0
     risk_level: str = "LOW"
@@ -186,22 +187,47 @@ class IdentityResolver:
         return None
 
     def _compute_match_confidence(self, person: ResolvedPerson) -> float:
-        """Score 0-1 based on corroborating evidence."""
+        """Score 0-1 based on corroborating evidence and generate reasons."""
         score = 0.0
-        if person.canonical_name:
-            score += 0.20
-        if person.emails:
-            score += min(0.25, len(person.emails) * 0.10)
-        if person.phones:
-            score += 0.15
+        corroborations = []
+        
+        # Email match
+        if person.emails and len(person.emails) > 1:
+            score += 0.35
+            corroborations.append(f"✓ Email {person.emails[0]['email']} found in {len(person.emails)} distinct sources")
+        elif person.emails:
+            score += 0.25
+            corroborations.append(f"✓ Email {person.emails[0]['email']} verified in evidence")
+            
+        # Username match across platforms
         if person.usernames:
-            score += min(0.25, len(person.usernames) * 0.05)
-        if person.locations:
-            score += 0.05
-        if person.employers:
-            score += 0.05
+            platforms = set([u.get('platform') for u in person.usernames if u.get('platform') and u.get('platform') != 'Unknown'])
+            if len(platforms) >= 3:
+                score += 0.45
+                corroborations.append(f"✓ Consistent username pattern matched across {len(platforms)} platforms")
+            elif len(platforms) > 1:
+                score += 0.25
+                corroborations.append(f"✓ Username matched across {len(platforms)} platforms")
+            else:
+                score += 0.1
+                corroborations.append(f"⚠ Username found on a single platform — low confidence link")
+                
+        # Location match
+        if person.locations and len(person.locations) > 0:
+            score += 0.15
+            corroborations.append(f"✓ Location '{person.locations[0]}' consistent in profile data")
+            
+        # Breach data
         if person.breach_findings:
-            score += 0.05
+            score += 0.15
+            corroborations.append(f"✓ Identifiers found in {len(person.breach_findings)} breach databases")
+            
+        if person.canonical_name and score < 0.6:
+            score += 0.2
+            if score <= 0.3:
+                corroborations.append(f"⚠ Name match only — high chance of false positive")
+            
+        person.corroborations = corroborations
         return round(min(score, 1.0), 2)
 
     def _compute_risk_score(self, person: ResolvedPerson) -> float:

@@ -23,7 +23,22 @@ class RedditLocalConnector:
         if db is None or not value:
             return []
 
-        query = self._mongo_query(pivot_type, value)
+        usernames = []
+        if pivot_type == "username":
+            usernames = [value.lstrip("@")]
+            from osint.connectors.username_connector import generate_username_variants
+            usernames.extend(generate_username_variants(hint=value))
+        elif pivot_type in ("name", "email"):
+            from osint.connectors.username_connector import generate_username_variants
+            if pivot_type == "name":
+                usernames = generate_username_variants(name=value)
+            else:
+                usernames = generate_username_variants(email=value)
+        else:
+            usernames = [value]
+            
+        usernames = list(set(usernames))
+        query = self._mongo_query(pivot_type, value, usernames)
         evidence = []
 
         try:
@@ -88,10 +103,18 @@ class RedditLocalConnector:
 
         return evidence
 
-    def _mongo_query(self, pivot_type: str, value: str) -> dict:
-        escaped = re.escape(value)
-        rx = {"$regex": escaped, "$options": "i"}
+    def _mongo_query(self, pivot_type: str, value: str, usernames: list) -> dict:
+        escaped_value = re.escape(value)
+        rx_val = {"$regex": escaped_value, "$options": "i"}
+        
+        author_conditions = []
+        for u in usernames:
+            author_conditions.append({"author": {"$regex": f"^{re.escape(u)}$", "$options": "i"}})
+            
+        if not author_conditions:
+            author_conditions = [{"author": rx_val}]
+            
         if pivot_type == "username":
-            clean = value.lstrip("@")
-            return {"$or": [{"author": {"$regex": f"^{re.escape(clean)}$", "$options": "i"}}, {"text": rx}, {"content": rx}, {"title": rx}]}
-        return {"$or": [{"author": rx}, {"text": rx}, {"body": rx}, {"content": rx}, {"title": rx}, {"url": rx}]}
+            return {"$or": author_conditions + [{"text": rx_val}, {"content": rx_val}, {"title": rx_val}]}
+            
+        return {"$or": author_conditions + [{"text": rx_val}, {"body": rx_val}, {"content": rx_val}, {"title": rx_val}, {"url": rx_val}]}
