@@ -64,7 +64,7 @@ export default function InvestigationMode() {
         const formData = new FormData();
         formData.append('image', selectedImage);
         try {
-          const uploadRes = await fetch(`${API_BASE}/api/osint/upload`, {
+          const uploadRes = await fetch(`${API_BASE}/osint/upload`, {
             method: 'POST',
             body: formData
           });
