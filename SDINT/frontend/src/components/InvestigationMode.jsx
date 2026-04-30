@@ -78,7 +78,7 @@ export default function InvestigationMode() {
         }
       }
 
-      const response = await fetch(`${API_BASE}/api/osint/investigate`, {
+      const response = await fetch(`${API_BASE}/osint/investigate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,12 +106,12 @@ export default function InvestigationMode() {
   // Poll for results
   async function pollResults(sId, tId) {
     try {
-      const taskResponse = await fetch(`${API_BASE}/api/osint/tasks/${tId}`);
+      const taskResponse = await fetch(`${API_BASE}/osint/tasks/${tId}`);
       const taskData = await taskResponse.json();
       setPollingStatus(taskData.status);
 
       if (taskData.status === 'complete' || taskData.status === 'success') {
-        const sessionResponse = await fetch(`${API_BASE}/api/osint/session/${sId}`);
+        const sessionResponse = await fetch(`${API_BASE}/osint/session/${sId}`);
         const sessionData = await sessionResponse.json();
 
         if (sessionData.session) {
