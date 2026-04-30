@@ -60,7 +60,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "https://ai-sd-int.vercel.app"
+    }
+}, supports_credentials=True)
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        return '', 200
 
 def parse_json(data):
     return json.loads(json_util.dumps(data))
