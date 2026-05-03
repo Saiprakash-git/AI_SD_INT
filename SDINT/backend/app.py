@@ -7,6 +7,23 @@ import sys
 import logging
 import re
 from datetime import datetime, timezone
+import psutil
+
+# Setup logging first so log_memory can use it
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def log_memory(stage: str):
+    """Log memory usage using psutil."""
+    try:
+        process = psutil.Process(os.getpid())
+        mem_mb = process.memory_info().rss / 1024 / 1024
+        logger.info(f"[Memory] {stage}: {mem_mb:.2f} MB")
+    except Exception as e:
+        logger.error(f"[Memory] Failed to read memory: {e}")
+
+log_memory("App Initialization Started")
+
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -55,9 +72,11 @@ from osint.services.investigation_orchestrator import run_full_investigation, pa
 from osint.services.source_credibility import SourceCredibility
 from osint.services.watchlist_service import WatchlistService
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Setup logging (already done at top, just keeping reference)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
+
+log_memory("After OSINT Connectors/Services Import")
 
 app = Flask(__name__)
 CORS(app)
@@ -1269,7 +1288,30 @@ def get_session_report(session_id):
         return jsonify({"error": str(e)}), 500
 
 
+def check_connector_health():
+    """Print which connectors are ACTIVE vs DISABLED based on env variables."""
+    logger.info("="*30 + " Connector Health " + "="*30)
+    
+    connectors = {
+        "GitHubConnector": ["GITHUB_TOKEN"],
+        "RedditConnector": ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"],
+        "MongoDB": ["MONGO_URI"],
+        "SherlockConnector": [],  # No auth needed
+        "HIBPConnector": [],      # Assuming free tier no key for now, or add HIBP_API_KEY if needed
+        "DuckDuckGo": [],
+    }
+    
+    for name, req_vars in connectors.items():
+        missing = [v for v in req_vars if not os.environ.get(v)]
+        if missing:
+            logger.warning(f"❌ [DISABLED] {name} - Missing ENV: {', '.join(missing)}")
+        else:
+            logger.info(f"✅ [ACTIVE] {name}")
+            
+    logger.info("="*78)
+
 if __name__ == '__main__':
+    log_memory("Starting Flask App (Pre-run)")
     logger.info("="*70)
     logger.info("Starting SDINT - Social Data Intelligence Platform")
     logger.info("="*70)
@@ -1292,4 +1334,6 @@ if __name__ == '__main__':
     logger.info("\nStarting on http://localhost:5000")
     logger.info("="*70 + "\n")
     
+    check_connector_health()
+    log_memory("Final Memory Check before app.run")
     app.run(debug=True, host='0.0.0.0', port=5000)

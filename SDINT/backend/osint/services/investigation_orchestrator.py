@@ -6,6 +6,7 @@ CORE TO THE OSINT FRAMEWORK - FOCUSES ON IDENTITY DISCOVERY.
 
 import re
 import uuid
+import logging
 from datetime import datetime, timezone
 
 from osint.connectors.username_connector import UsernameConnector
@@ -26,6 +27,8 @@ from osint.services.narrative_builder import NarrativeBuilder
 from osint.services.rate_scheduler import RateScheduler
 from osint.services.source_credibility import SourceCredibility
 from osint.services.content_analyzer import ContentAnalyzer
+
+logger = logging.getLogger(__name__)
 
 
 def _connector_source_type(connector_name: str) -> str:
@@ -150,7 +153,7 @@ def run_full_investigation(session_id: str, raw_query: str, db, context: dict = 
     """
     Complete OSINT investigation pipeline:
     1. Parse query
-    2. Run all connectors
+    2. Run all connectors (sequentially — safe for connectors that manage their own async loops)
     3. Resolve identity
     4. Build narrative
     5. Save results
@@ -203,11 +206,11 @@ def run_full_investigation(session_id: str, raw_query: str, db, context: dict = 
         if context and context.get("image_path"):
             connectors.append(SauceNaoConnector())
         
-        # If we have existing web search or domain connectors, add them
-        # connectors.append(WebSearchConnector())
-        # connectors.append(DomainIntelConnector())
-        
-        # Run each connector
+        # Run each connector sequentially.
+        # NOTE: Many connectors (UsernameConnector, SherlockConnector) internally manage
+        # their own asyncio event loops for concurrent HTTP checks.  Wrapping them in an
+        # outer asyncio.to_thread / gather layer caused nested-loop conflicts and silent
+        # failures.  Sequential execution is intentional and reliable here.
         print(f"Running {len(connectors)} connectors...")
         for connector in connectors:
             if connector.supports_types and pivot["type"] in connector.supports_types:
@@ -232,7 +235,7 @@ def run_full_investigation(session_id: str, raw_query: str, db, context: dict = 
                         db.evidence_items.insert_one(normalized)
                         all_evidence.append(normalized)
                     
-                    print(f"    [INFO] {len(items)} evidence items")
+                    print(f"    [INFO] {connector.name}: {len(items)} evidence items")
                     run_doc = {
                         "session_id": session_id,
                         "connector": connector.name,
@@ -246,6 +249,7 @@ def run_full_investigation(session_id: str, raw_query: str, db, context: dict = 
                     run_doc.pop("_id", None)
                 except Exception as e:
                     print(f"  [FAIL] {connector.name} failed: {e}")
+                    logger.error(f"Connector {connector.name} failed: {e}", exc_info=True)
                     run_doc = {
                         "session_id": session_id,
                         "connector": connector.name,
@@ -258,6 +262,9 @@ def run_full_investigation(session_id: str, raw_query: str, db, context: dict = 
                     connector_runs.append(run_doc)
                     db.connector_runs.insert_one(run_doc)
                     run_doc.pop("_id", None)
+            else:
+                # Log skipped connectors so we have visibility
+                print(f"  [SKIP] {connector.name} (does not support pivot type '{pivot['type']}')")
         
         print(f"\nTotal evidence: {len(all_evidence)} items")
         

@@ -9,24 +9,29 @@ class ImageAnalyzer:
     
     def __init__(self):
         self.face_app = None
-        self._init_insightface()
+        self.cv2 = None
+        self.np = None
         
     def _init_insightface(self):
+        if self.face_app is not None:
+            return
         try:
             import cv2
             import numpy as np
             from insightface.app import FaceAnalysis
             
-            # Initialize with standard model if available
-            self.face_app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
+            # Initialize with lightweight model for memory efficiency
+            self.face_app = FaceAnalysis(name='buffalo_sc', providers=['CPUExecutionProvider'])
             self.face_app.prepare(ctx_id=0, det_size=(640, 640))
             self.cv2 = cv2
             self.np = np
-            logger.info("InsightFace initialized successfully.")
+            logger.info("InsightFace (buffalo_sc) initialized successfully.")
         except ImportError:
             logger.warning("InsightFace or OpenCV not installed. Facial recognition will be skipped. Run 'pip install insightface opencv-python onnxruntime'")
+            self.face_app = False
         except Exception as e:
             logger.error(f"Error initializing InsightFace: {e}")
+            self.face_app = False
 
     def analyze(self, image_path: str) -> dict:
         from osint.extractors.exif_extractor import ExifExtractor
@@ -41,7 +46,8 @@ class ImageAnalyzer:
         results["exif"] = ExifExtractor.extract(image_path)
         
         # 2. Face Recognition
-        if self.face_app and os.path.exists(image_path):
+        self._init_insightface()
+        if self.face_app and self.face_app is not False and os.path.exists(image_path):
             try:
                 img = self.cv2.imread(image_path)
                 if img is not None:
@@ -63,7 +69,8 @@ class ImageAnalyzer:
         
     def compare_faces(self, embedding1: list, embedding2: list, threshold=0.6) -> bool:
         """Compare two face embeddings using cosine similarity."""
-        if not self.face_app or not embedding1 or not embedding2:
+        self._init_insightface()
+        if not self.face_app or self.face_app is False or not embedding1 or not embedding2:
             return False
         try:
             e1 = self.np.array(embedding1)
