@@ -79,7 +79,16 @@ from osint.services.watchlist_service import WatchlistService
 log_memory("After OSINT Connectors/Services Import")
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "https://ai-sd-int.vercel.app"
+    }
+}, supports_credentials=True)
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        return '', 200
 
 def parse_json(data):
     return json.loads(json_util.dumps(data))
